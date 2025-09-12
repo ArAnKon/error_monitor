@@ -1,0 +1,35 @@
+{
+  "manifest_version": 3,
+  "name": "Error Monitoring",
+  "version": "0.1",
+  "description": "Показывает ошибки текущей вкладки в виде popup",
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "webRequest"
+  ],
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "css": ["styles/notification.css"],
+      "run_at": "document_start"
+    }
+  ],
+  "action":{
+    "default_popup":"popup.html",
+    "default_title": "Error Monitoring",
+    "default_icon": "icons/icon.jpg"
+  },
+
+  "background": {
+    "service_worker": "background.js"
+  },
+
+  "web_accessible_resources": [
+    {
+      "resources": ["styles/*", "icons/*"],
+      "matches": ["<all_urls>"]
+    }
+  ]
+}
