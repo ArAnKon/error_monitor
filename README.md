@@ -2,7 +2,7 @@
 
 Расширение для Google Chrome, позволяющее перехватывать ошибки без открытия DevTools. Все наглядно отображается в pop-up уведомлениях. Это удобный инструмент для тестировщиков программного обеспечения, аналитиков и специалистов технической поддержки, если по каким-то причинам они не могут открыть DevTools 😄
 
-![Image alt](https://github.com/ArAnKon/error_monitor/blob/d674e3766f6099494f5f6f50221052f87b1e1fc5/demonstration/menu.png)
+![Image alt](https://github.com/ArAnKon/error_monitor/blob/main/demonstration/menu.png)
 
 ## 🚀 Возможности
 
@@ -13,7 +13,7 @@
 - Сохранение/очистка истории ошибок
 - Копирование cURL из pop-up уведомления
 
-![Image alt](https://github.com/ArAnKon/error_monitor/blob/d674e3766f6099494f5f6f50221052f87b1e1fc5/demonstration/notifications.png)
+![Image alt](https://github.com/ArAnKon/error_monitor/blob/main/demonstration/notifications.png)
 
 ## 📦 Установка
 
