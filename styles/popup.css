@@ -1,5 +1,5 @@
 body {
-    width: 350px;
+    width: 380px;
     padding: 15px;
     font-family: Arial, sans-serif;
     background: #ffffff;
@@ -52,6 +52,11 @@ h3 {
     color: #1976d2;
 }
 
+.history-count {
+    font-weight: bold;
+    color: #7b1fa2;
+}
+
 .buttons {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -87,6 +92,22 @@ button:hover {
 #testNetwork {
     background: #1e90ff;
     color: white;
+}
+
+#showHistory {
+    background: #7b1fa2;
+    color: white;
+}
+
+#exportHistory {
+    background: #ff9800;
+    color: white;
+}
+
+#clearHistory.danger {
+    background: #d32f2f;
+    color: white;
+    grid-column: span 2;
 }
 
 #totalCount {

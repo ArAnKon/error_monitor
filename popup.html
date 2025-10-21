@@ -1,30 +1,37 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
 <head>
-    <meta charset="utf-8">
-    <link rel="stylesheet" href="styles/popup.css">
+  <meta charset="utf-8" />
+  <link rel="stylesheet" href="styles/popup.css" />
 </head>
 <body>
 <div class="header">
-    <h3>Перехватчик ошибок. Alpha</h3>
-    <span id="totalCount">0</span>
+  <h3>Перехватчик ошибок</h3>
+  <span id="totalCount">0</span>
 </div>
 
 <div class="stats">
-    <div class="stat-item">
-        <span>Console Errors:</span>
-        <span id="errorCount" class="error-count">0</span>
-    </div>
-    <div class="stat-item">
-        <span>Network Errors:</span>
-        <span id="networkCount" class="network-count">0</span>
-    </div>
+  <div class="stat-item">
+    <span>Console Errors:</span>
+    <span id="errorCount" class="error-count">0</span>
+  </div>
+  <div class="stat-item">
+    <span>Network Errors:</span>
+    <span id="networkCount" class="network-count">0</span>
+  </div>
+  <div class="stat-item">
+    <span>History Total:</span>
+    <span id="historyCount" class="history-count">0</span>
+  </div>
 </div>
 
 <div class="buttons">
-    <button id="clearAll">Очистить все</button>
-    <button id="testError">Тест ошибки консоли</button>
-    <button id="testNetwork">Тест ошибки Network</button>
+  <button id="clearAll">Очистить текущие</button>
+  <button id="testError">Тест ошибки консоли</button>
+  <button id="testNetwork">Тест ошибки Network</button>
+  <button id="showHistory">Показать историю</button>
+  <button id="exportHistory">Экспорт истории</button>
+  <button id="clearHistory" class="danger">Очистить историю</button>
 </div>
 
 <script src="popup.js"></script>
