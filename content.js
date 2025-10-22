@@ -26,13 +26,35 @@ loadHistory();
 
 // Слушаем сообщения от background script
 chrome.runtime.onMessage.addListener((request) => {
+  console.log('Error Monitor: Received message:', request);
+
+  let errorMessage = '';
+  let statusCode = null;
+
+  if (request.type === "NETWORK_ERROR") {
+    statusCode = request.error.statusCode;
+
+    if (statusCode && statusCode >= 400) {
+      // Это HTTP ошибка (404, 500, etc)
+      errorMessage = `HTTP Error ${statusCode}: ${request.error.url}`;
+    } else {
+      // Это сетевая ошибка (DNS, timeout, etc)
+      errorMessage = `Network Error: ${request.error.url} - ${request.error.error}`;
+    }
+  }
+
   const networkErrorData = {
-    type: `${request.type}`,
-    message: `Ошибка ${request.type}: ${request.error.error} - ${request.error.url}`,
+    type: "NETWORK_ERROR", // Всегда NETWORK_ERROR для consistency
+    message: errorMessage,
     timestamp: new Date(request.error.timestamp || Date.now()),
-    details: request.error,
+    details: {
+      ...request.error,
+      statusCode: statusCode
+    },
     id: generateId()
   };
+
+  console.log('Error Monitor: Created error data with status:', statusCode);
 
   currentTabErrors.push(networkErrorData);
   errorHistory.push({
@@ -54,19 +76,16 @@ function showErrorPopup(errorData) {
   const notification = document.createElement("div");
   notification.className = `error-notification ${errorData.type.toLowerCase()}-notification`;
 
-  const typeNames = {
-    CONSOLE_ERROR: "Console Error",
-    NETWORK_ERROR: "Network Error",
-    SERVER_ERROR: "Network Error",
-  };
+  // Определяем заголовок с учетом статус-кода для сетевых ошибок
+  let title = getErrorTitle(errorData);
 
   const isRequestError =
       errorData.type === "NETWORK_ERROR" || errorData.type === "SERVER_ERROR";
 
   notification.innerHTML = `
     <h4>
-      ${typeNames[errorData.type] || errorData.type}
-      <button class="close-btn" onclick="event.stopPropagation(); this.parentElement.parentElement.remove(); updateNotificationsPosition();">×</button>
+      ${title}
+      <button class="close-btn">×</button>
     </h4>
     <p class="error-text">${escapeHtml(errorData.message)}</p>
     <div class="timestamp">
@@ -74,6 +93,14 @@ function showErrorPopup(errorData) {
       ${isRequestError ? '<span class="copy-hint">Click to copy curl</span>' : ""}
     </div>
   `;
+
+  // Добавляем обработчик для кнопки закрытия
+  const closeBtn = notification.querySelector('.close-btn');
+  closeBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    notification.remove();
+    updateNotificationsPosition();
+  });
 
   // Обработчик клика для копирования cURL
   if (isRequestError) {
@@ -118,12 +145,34 @@ function showErrorPopup(errorData) {
   }, 8000);
 }
 
+// Функция для получения заголовка ошибки - УПРОЩЕННАЯ ВЕРСИЯ
+function getErrorTitle(errorData) {
+  console.log('Error Monitor: getErrorTitle called with:', errorData);
+
+  const typeNames = {
+    CONSOLE_ERROR: "Console Error",
+    NETWORK_ERROR: "Network Error",
+  };
+
+  let title = typeNames[errorData.type] || errorData.type;
+
+  // ВСЕГДА показываем статус-код если он есть и больше 0
+  if (errorData.details && errorData.details.statusCode && errorData.details.statusCode > 0) {
+    title += ` (${errorData.details.statusCode})`;
+    console.log('Error Monitor: Added status code to title:', title);
+  } else {
+    console.log('Error Monitor: No status code to display. Details:', errorData.details);
+  }
+
+  return title;
+}
+
 // Функция для обновления позиций всех уведомлений
 function updateNotificationsPosition() {
   const notifications = document.querySelectorAll('.error-notification');
-  const bottomMargin = 20; // Отступ от нижнего края
-  const notificationHeight = 120; // Примерная высота одного уведомления
-  const gap = 10; // Расстояние между уведомлениями
+  const bottomMargin = 20;
+  const notificationHeight = 120;
+  const gap = 10;
 
   notifications.forEach((notification, index) => {
     const bottomPosition = bottomMargin + (notificationHeight + gap) * index;
@@ -172,12 +221,10 @@ function copyCurlCommand(errorData) {
           console.log("cURL скопирован в буфер обмена!");
         })
         .catch((err) => {
-          // Если современный API не работает, используем fallback
           console.warn("Modern clipboard API failed, using fallback:", err);
           fallbackCopyToClipboard(curlCommand);
         });
   } else {
-    // fallback если API недоступен
     fallbackCopyToClipboard(curlCommand);
   }
 }
@@ -290,7 +337,7 @@ window.addEventListener("beforeunload", () => {
   document.querySelectorAll(".error-notification").forEach((el) => el.remove());
 });
 
-// Экспорт функций  для popup
+// Экспорт функций для popup
 window.errorMonitor = {
   getCurrentErrors: () => currentTabErrors,
   getErrorHistory: () => errorHistory,
