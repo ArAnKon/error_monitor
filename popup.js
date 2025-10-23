@@ -33,6 +33,58 @@ function updateStats() {
   });
 }
 
+// Управление состоянием расширения
+document.getElementById("toggleExtension").addEventListener("change", (e) => {
+  const isEnabled = e.target.checked;
+  chrome.storage.local.set({ extensionEnabled: isEnabled }, () => {
+    updateUIState(isEnabled);
+
+    // Обновляем состояние на всех вкладках
+    chrome.tabs.query({}, (tabs) => {
+      tabs.forEach(tab => {
+        if (tab.id) {
+          chrome.tabs.sendMessage(tab.id, {
+            type: "EXTENSION_TOGGLE",
+            enabled: isEnabled
+          }).catch(() => {}); // Игнорируем ошибки для вкладок без content script
+        }
+      });
+    });
+
+    if (isEnabled) {
+      setTimeout(updateStats, 100);
+    } else {
+      // Очищаем статистику при выключении
+      document.getElementById("totalCount").textContent = "0";
+      document.getElementById("errorCount").textContent = "0";
+      document.getElementById("networkCount").textContent = "0";
+      document.getElementById("historyCount").textContent = "0";
+    }
+  });
+});
+
+// Обновление UI в зависимости от состояния
+function updateUIState(isEnabled) {
+  if (isEnabled) {
+    document.body.classList.remove("disabled");
+  } else {
+    document.body.classList.add("disabled");
+  }
+}
+
+// Загрузка состояния при открытии popup
+function loadExtensionState() {
+  chrome.storage.local.get(["extensionEnabled"], (result) => {
+    const isEnabled = result.extensionEnabled !== false; // По умолчанию включено
+    document.getElementById("toggleExtension").checked = isEnabled;
+    updateUIState(isEnabled);
+
+    if (isEnabled) {
+      updateStats();
+    }
+  });
+}
+
 // Очистка ошибок
 document.getElementById("clearAll").addEventListener("click", () => {
   chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
@@ -191,4 +243,6 @@ document.getElementById("exportHistory").addEventListener("click", () => {
 });
 
 // Инициализация при загрузке popup
-document.addEventListener('DOMContentLoaded', updateStats);
+document.addEventListener('DOMContentLoaded', () => {
+  loadExtensionState();
+});

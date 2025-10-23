@@ -1,6 +1,7 @@
 let currentTabErrors = [];
 let errorHistory = JSON.parse(localStorage.getItem('errorHistory') || '[]');
 const MAX_HISTORY_SIZE = 1000;
+let extensionEnabled = true;
 
 // Сохранение истории в localStorage
 function saveHistory() {
@@ -24,9 +25,35 @@ function loadHistory() {
 // Инициализация историю
 loadHistory();
 
+// Загрузка состояния расширения при старте
+function loadExtensionState() {
+  chrome.storage.local.get(["extensionEnabled"], (result) => {
+    if (result.extensionEnabled !== undefined) {
+      extensionEnabled = result.extensionEnabled;
+    }
+  });
+}
+
+// Инициализация состояния расширения
+loadExtensionState();
+
 // Слушаем сообщения от background script
 chrome.runtime.onMessage.addListener((request) => {
   console.log('Error Monitor: Received message:', request);
+
+  // Обработчик переключения состояния расширения
+  if (request.type === "EXTENSION_TOGGLE") {
+    extensionEnabled = request.enabled;
+
+    if (!extensionEnabled) {
+      // Очищаем все уведомления при выключении
+      document.querySelectorAll(".error-notification").forEach((el) => el.remove());
+    }
+    return;
+  }
+
+  // Если расширение выключено, игнорируем ошибки
+  if (!extensionEnabled) return;
 
   let errorMessage = '';
   let statusCode = null;
@@ -73,6 +100,9 @@ function generateId() {
 
 // Функция показа попапа ошибки
 function showErrorPopup(errorData) {
+  // Если расширение выключено, не показываем уведомления
+  if (!extensionEnabled) return;
+
   const notification = document.createElement("div");
   notification.className = `error-notification ${errorData.type.toLowerCase()}-notification`;
 
@@ -293,6 +323,10 @@ function escapeHtml(text) {
 const originalConsoleError = console.error;
 console.error = function (...args) {
   originalConsoleError.apply(console, args);
+
+  // Если расширение выключено, не обрабатываем ошибки
+  if (!extensionEnabled) return;
+
   const errorData = {
     type: "CONSOLE_ERROR",
     message: args
@@ -315,6 +349,9 @@ console.error = function (...args) {
 
 // Перехватчик JavaScript ошибок
 window.addEventListener("error", (event) => {
+  // Если расширение выключено, не обрабатываем ошибки
+  if (!extensionEnabled) return;
+
   const errorData = {
     type: "CONSOLE_ERROR",
     message: `${event.message} (${event.filename}:${event.lineno}:${event.colno})`,
@@ -332,6 +369,27 @@ window.addEventListener("error", (event) => {
   return false;
 });
 
+// Перехватчик Promise rejections
+window.addEventListener("unhandledrejection", (event) => {
+  // Если расширение выключено, не обрабатываем ошибки
+  if (!extensionEnabled) return;
+
+  const errorData = {
+    type: "CONSOLE_ERROR",
+    message: `Unhandled Promise Rejection: ${event.reason}`,
+    timestamp: new Date(),
+    id: generateId()
+  };
+  currentTabErrors.push(errorData);
+  errorHistory.push({
+    ...errorData,
+    tabUrl: window.location.href,
+    domain: window.location.hostname
+  });
+  saveHistory();
+  showErrorPopup(errorData);
+});
+
 // Очистка уведомлений
 window.addEventListener("beforeunload", () => {
   document.querySelectorAll(".error-notification").forEach((el) => el.remove());
@@ -339,7 +397,7 @@ window.addEventListener("beforeunload", () => {
 
 // Экспорт функций для popup
 window.errorMonitor = {
-  getCurrentErrors: () => currentTabErrors,
+  getCurrentErrors: () => extensionEnabled ? currentTabErrors : [],
   getErrorHistory: () => errorHistory,
   clearCurrentErrors: () => {
     currentTabErrors = [];
@@ -348,5 +406,6 @@ window.errorMonitor = {
   clearHistory: () => {
     errorHistory = [];
     localStorage.removeItem('errorHistory');
-  }
+  },
+  getExtensionState: () => extensionEnabled
 };
