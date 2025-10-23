@@ -3,7 +3,7 @@
   "name": "Error Monitor",
   "version": "1.0",
   "description": "Показывает ошибки текущей вкладки в виде popup",
-  "permissions": ["activeTab", "scripting", "tabs", "webRequest"],
+  "permissions": ["activeTab", "scripting", "tabs", "webRequest", "storage"],
 
   "content_scripts": [
     {
