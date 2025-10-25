@@ -39,14 +39,14 @@ document.getElementById("toggleExtension").addEventListener("change", (e) => {
   chrome.storage.local.set({ extensionEnabled: isEnabled }, () => {
     updateUIState(isEnabled);
 
-    // Обновляем состояние на всех вкладках
+    // Обновление состояния на всех вкладках
     chrome.tabs.query({}, (tabs) => {
       tabs.forEach(tab => {
         if (tab.id) {
           chrome.tabs.sendMessage(tab.id, {
             type: "EXTENSION_TOGGLE",
             enabled: isEnabled
-          }).catch(() => {}); // Игнорируем ошибки для вкладок без content script
+          }).catch(() => {}); // Игнор ошибки для вкладок без content script
         }
       });
     });
@@ -54,7 +54,7 @@ document.getElementById("toggleExtension").addEventListener("change", (e) => {
     if (isEnabled) {
       setTimeout(updateStats, 100);
     } else {
-      // Очищаем статистику при выключении
+      // Очистка статистики при выключении
       document.getElementById("totalCount").textContent = "0";
       document.getElementById("errorCount").textContent = "0";
       document.getElementById("networkCount").textContent = "0";
@@ -104,11 +104,10 @@ document.getElementById("clearAll").addEventListener("click", () => {
   });
 });
 
-// Тест ошибки консоли
+// Тест ошибки консоли (позже выпилю)
 document.getElementById("testError").addEventListener("click", () => {
   chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
     if (tabs[0]) {
-      // Просто вставляем код для выполнения на странице
       chrome.scripting.executeScript({
         target: { tabId: tabs[0].id },
         func: () => {
@@ -126,7 +125,7 @@ document.getElementById("testError").addEventListener("click", () => {
   });
 });
 
-// Тест сетевой ошибки - убедимся что используем правильные URL
+// Тест сетевой ошибки (пзже выпилю)
 document.getElementById("testNetwork").addEventListener("click", () => {
   chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
     if (tabs[0]) {
@@ -162,57 +161,33 @@ document.getElementById("testNetwork").addEventListener("click", () => {
 
 // Показать историю ошибок
 document.getElementById("showHistory").addEventListener("click", () => {
-  chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-    if (tabs[0]) {
-      chrome.scripting.executeScript({
-        target: { tabId: tabs[0].id },
-        func: () => {
-          const history = window.errorMonitor ? window.errorMonitor.getErrorHistory() : [];
-          console.log('Error History:', history);
-
-          history.forEach((error, index) => {
-            let statusInfo = '';
-            if ((error.type === 'SERVER_ERROR' || error.type === 'NETWORK_ERROR') && error.details) {
-              if (error.details.statusCode) {
-                statusInfo = `Status: ${error.details.statusCode}`;
-              } else if (error.details.error) {
-                statusInfo = `Error: ${error.details.error}`;
-              }
-            }
-            console.group(`Error ${index + 1}: ${error.type} ${statusInfo}`);
-            console.log('Message:', error.message);
-            console.log('Time:', error.timestamp);
-            console.log('URL:', error.tabUrl);
-            if (error.details) {
-              console.log('Details:', error.details);
-            }
-            console.groupEnd();
-          });
-
-          alert(`Всего ошибок в истории: ${history.length}\n\nПосмотрите консоль для деталей.`);
-        },
-      });
-    }
+  // Открываем history.html в новом окне popup
+  chrome.windows.create({
+    url: chrome.runtime.getURL("history.html"),
+    type: "popup",
+    width: 600,
+    height: 700
   });
 });
 
 // Очистить историю
 document.getElementById("clearHistory").addEventListener("click", () => {
   if (confirm("Вы уверены, что хотите очистить всю историю ошибок?")) {
-    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-      if (tabs[0]) {
-        chrome.scripting.executeScript({
-          target: { tabId: tabs[0].id },
-          func: () => {
-            if (window.errorMonitor) {
-              window.errorMonitor.clearHistory();
-            }
-          },
-        })
-            .then(() => {
-              setTimeout(updateStats, 100);
-            });
-      }
+    chrome.storage.local.remove('errorHistory', () => {
+      // Также очищаем в content.js если он активен
+      chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+        if (tabs[0]) {
+          chrome.scripting.executeScript({
+            target: { tabId: tabs[0].id },
+            func: () => {
+              if (window.errorMonitor) {
+                window.errorMonitor.clearHistory();
+              }
+            },
+          });
+        }
+      });
+      setTimeout(updateStats, 100);
     });
   }
 });

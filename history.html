@@ -1,0 +1,141 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <link rel="stylesheet" href="styles/history.css" />
+</head>
+<body>
+<div class="history-container">
+  <!-- Заголовок -->
+  <div class="history-header">
+    <h3>История ошибок</h3>
+    <div class="header-controls">
+      <button id="backButton" class="back-button">← Назад</button>
+      <button id="clearHistory" class="back-button danger">Очистить историю</button>
+    </div>
+  </div>
+
+  <!-- Статистика -->
+  <div class="stats-grid">
+    <div class="stat-card total">
+      <div class="stat-number" id="totalCount">0</div>
+      <div class="stat-label">Всего ошибок</div>
+    </div>
+    <div class="stat-card console">
+      <div class="stat-number" id="consoleCount">0</div>
+      <div class="stat-label">Console Errors</div>
+    </div>
+    <div class="stat-card network">
+      <div class="stat-number" id="networkCount">0</div>
+      <div class="stat-label">Network Errors</div>
+    </div>
+  </div>
+
+  <!-- Фильтры -->
+  <div class="filters-container">
+    <div class="filters-row">
+      <div class="filter-group">
+        <label for="typeFilter">Тип ошибки</label>
+        <select id="typeFilter">
+          <option value="all">Все типы</option>
+          <option value="CONSOLE_ERROR">Console Errors</option>
+          <option value="NETWORK_ERROR">Network Errors</option>
+        </select>
+      </div>
+
+      <div class="filter-group">
+        <label for="timeFilter">Период времени</label>
+        <select id="timeFilter">
+          <option value="all">Все время</option>
+          <option value="today">Сегодня</option>
+          <option value="week">Неделя</option>
+          <option value="month">Месяц</option>
+        </select>
+      </div>
+
+      <div class="filter-group">
+        <label for="searchInput">Поиск по сообщению</label>
+        <input type="text" id="searchInput" placeholder="Введите текст для поиска..." />
+      </div>
+    </div>
+  </div>
+
+  <!-- Основной контент -->
+  <div class="history-content">
+    <div id="historyList">
+      <!-- Список ошибок будет здесь -->
+    </div>
+  </div>
+
+  <!-- Модальное окно деталей -->
+  <div id="errorDetail" class="error-detail hidden">
+    <div class="detail-modal">
+      <div class="detail-header">
+        <button id="backToList" class="back-button">← Назад</button>
+        <h4>Детали ошибки</h4>
+      </div>
+
+      <div class="detail-content">
+        <div class="detail-section">
+          <label>Тип ошибки</label>
+          <span id="detailType" class="detail-type"></span>
+        </div>
+
+        <div class="detail-section">
+          <label>Время возникновения</label>
+          <div id="detailTime" class="detail-time"></div>
+        </div>
+
+        <div class="detail-section">
+          <label>URL страницы</label>
+          <div id="detailUrl" class="detail-url"></div>
+        </div>
+
+        <div class="detail-section">
+          <label>Сообщение об ошибке</label>
+          <div id="detailMessage" class="detail-message"></div>
+        </div>
+
+        <div id="networkDetails" class="detail-section hidden">
+          <label>Детали сетевого запроса</label>
+          <div class="network-details">
+            <div class="network-row">
+              <strong>URL запроса:</strong>
+              <span id="detailRequestUrl" class="detail-url"></span>
+            </div>
+            <div class="network-row">
+              <strong>Метод:</strong>
+              <span id="detailMethod"></span>
+            </div>
+            <div class="network-row">
+              <strong>Статус код:</strong>
+              <span id="detailStatusCode"></span>
+            </div>
+            <div class="network-row">
+              <strong>Тип запроса:</strong>
+              <span id="detailRequestType"></span>
+            </div>
+          </div>
+        </div>
+
+        <div class="detail-actions">
+          <button id="copyCurl" class="action-button curl-button">
+            📋 Скопировать cURL
+          </button>
+          <button id="copyDetails" class="action-button copy-button">
+            📄 Скопировать детали
+          </button>
+        </div>
+
+        <div id="curlPreview" class="curl-preview hidden">
+          <label>cURL команда для воспроизведения</label>
+          <pre id="curlCommand"></pre>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="history.js"></script>
+</body>
+</html>

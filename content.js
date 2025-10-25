@@ -1,29 +1,25 @@
 let currentTabErrors = [];
-let errorHistory = JSON.parse(localStorage.getItem('errorHistory') || '[]');
+let errorHistory = [];
 const MAX_HISTORY_SIZE = 1000;
 let extensionEnabled = true;
 
-// Сохранение истории в localStorage
+// Сохранение истории в chrome.storage
 function saveHistory() {
   const historyToSave = errorHistory.slice(-MAX_HISTORY_SIZE);
-  localStorage.setItem('errorHistory', JSON.stringify(historyToSave));
+  chrome.storage.local.set({ errorHistory: historyToSave }, () => {
+    console.log('History saved:', historyToSave.length, 'items');
+  });
 }
 
-// Загрузка историю при старте
+// Загрузка истории при старте
 function loadHistory() {
-  try {
-    const saved = localStorage.getItem('errorHistory');
-    if (saved) {
-      errorHistory = JSON.parse(saved);
+  chrome.storage.local.get(["errorHistory"], (result) => {
+    if (result.errorHistory) {
+      errorHistory = result.errorHistory;
+      console.log('History loaded:', errorHistory.length, 'items');
     }
-  } catch (e) {
-    console.error('Error loading history:', e);
-    errorHistory = [];
-  }
+  });
 }
-
-// Инициализация историю
-loadHistory();
 
 // Загрузка состояния расширения при старте
 function loadExtensionState() {
@@ -34,10 +30,11 @@ function loadExtensionState() {
   });
 }
 
-// Инициализация состояния расширения
+// Инициализация
+loadHistory();
 loadExtensionState();
 
-// Слушаем сообщения от background script
+// Сообщения от background script
 chrome.runtime.onMessage.addListener((request) => {
   console.log('Error Monitor: Received message:', request);
 
@@ -46,13 +43,13 @@ chrome.runtime.onMessage.addListener((request) => {
     extensionEnabled = request.enabled;
 
     if (!extensionEnabled) {
-      // Очищаем все уведомления при выключении
+      // Очистка всех уведомлений при выключении
       document.querySelectorAll(".error-notification").forEach((el) => el.remove());
     }
     return;
   }
 
-  // Если расширение выключено, игнорируем ошибки
+  // Игнор ошибок, если расширение выключено
   if (!extensionEnabled) return;
 
   let errorMessage = '';
@@ -71,7 +68,7 @@ chrome.runtime.onMessage.addListener((request) => {
   }
 
   const networkErrorData = {
-    type: "NETWORK_ERROR", // Всегда NETWORK_ERROR для consistency
+    type: "NETWORK_ERROR",
     message: errorMessage,
     timestamp: new Date(request.error.timestamp || Date.now()),
     details: {
@@ -100,13 +97,13 @@ function generateId() {
 
 // Функция показа попапа ошибки
 function showErrorPopup(errorData) {
-  // Если расширение выключено, не показываем уведомления
+  // Игнор показа уведомления при выключенном расширении
   if (!extensionEnabled) return;
 
   const notification = document.createElement("div");
   notification.className = `error-notification ${errorData.type.toLowerCase()}-notification`;
 
-  // Определяем заголовок с учетом статус-кода для сетевых ошибок
+  // Определение заголовка с учетом статус-кода для сетевых ошибок
   let title = getErrorTitle(errorData);
 
   const isRequestError =
@@ -124,7 +121,7 @@ function showErrorPopup(errorData) {
     </div>
   `;
 
-  // Добавляем обработчик для кнопки закрытия
+  // Обработчик для кнопки закрытия
   const closeBtn = notification.querySelector('.close-btn');
   closeBtn.addEventListener('click', (e) => {
     e.stopPropagation();
@@ -140,7 +137,7 @@ function showErrorPopup(errorData) {
 
         notification.classList.add("copy-success");
 
-        // Показываем тултип
+        // Тултип
         const tooltip = document.createElement("div");
         tooltip.className = "copy-tooltip";
         tooltip.textContent = "cURL скопирован в буфер обмена!";
@@ -158,7 +155,7 @@ function showErrorPopup(errorData) {
 
   document.body.appendChild(notification);
 
-  // Обновляем позиции всех уведомлений
+  // Обновление позиции всех уведомлений
   updateNotificationsPosition();
 
   // Авто-скрытие
@@ -175,7 +172,7 @@ function showErrorPopup(errorData) {
   }, 8000);
 }
 
-// Функция для получения заголовка ошибки - УПРОЩЕННАЯ ВЕРСИЯ
+// Функция для получения заголовка ошибки
 function getErrorTitle(errorData) {
   console.log('Error Monitor: getErrorTitle called with:', errorData);
 
@@ -186,7 +183,6 @@ function getErrorTitle(errorData) {
 
   let title = typeNames[errorData.type] || errorData.type;
 
-  // ВСЕГДА показываем статус-код если он есть и больше 0
   if (errorData.details && errorData.details.statusCode && errorData.details.statusCode > 0) {
     title += ` (${errorData.details.statusCode})`;
     console.log('Error Monitor: Added status code to title:', title);
@@ -286,7 +282,7 @@ function fallbackCopyToClipboard(text) {
   document.body.removeChild(textArea);
 }
 
-// Показываем ошибку копирования
+// Ошибка копирования
 function showCopyError(text) {
   const errorMsg = document.createElement("div");
   errorMsg.style.cssText = `
@@ -405,7 +401,7 @@ window.errorMonitor = {
   },
   clearHistory: () => {
     errorHistory = [];
-    localStorage.removeItem('errorHistory');
+    chrome.storage.local.remove('errorHistory');
   },
   getExtensionState: () => extensionEnabled
 };

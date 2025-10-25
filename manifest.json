@@ -27,7 +27,7 @@
 
   "web_accessible_resources": [
     {
-      "resources": ["styles/*", "icons/*"],
+      "resources": ["styles/*", "icons/*", "history.html"],
       "matches": ["<all_urls>"]
     }
   ]
