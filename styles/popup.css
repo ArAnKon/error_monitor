@@ -84,10 +84,24 @@ button:hover {
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
+/* КНОПКИ НА ВСЮ ШИРИНУ */
+.full-width {
+    grid-column: span 2;
+}
+
 #clearAll {
     background: #24af77;
     color: white;
-    grid-column: span 2;
+}
+
+#captureScreenshot {
+    background: #ff9800;
+    color: white;
+}
+
+#captureScreenshot:disabled {
+    background: #cccccc;
+    cursor: not-allowed;
 }
 
 #testError {
@@ -113,7 +127,6 @@ button:hover {
 #clearHistory.danger {
     background: #d32f2f;
     color: white;
-    grid-column: span 2;
 }
 
 #totalCount {

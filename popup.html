@@ -9,7 +9,7 @@
   <h3>Перехватчик ошибок</h3>
   <div class="header-controls">
     <label class="switch">
-      <input type="checkbox" id="toggleExtension">
+      <input type="checkbox" id="toggleExtension" checked>
       <span class="slider round"></span>
     </label>
     <span id="totalCount">0</span>
@@ -32,12 +32,13 @@
 </div>
 
 <div class="buttons">
-  <button id="clearAll">Очистить текущие</button>
+  <button id="clearAll" class="full-width">Очистить текущие</button>
+  <button id="captureScreenshot" class="full-width">Сделать скриншот</button>
   <button id="testError">Тест ошибки консоли</button>
   <button id="testNetwork">Тест ошибки Network</button>
   <button id="showHistory">Показать историю</button>
   <button id="exportHistory">Экспорт истории</button>
-  <button id="clearHistory" class="danger">Очистить историю</button>
+  <button id="clearHistory" class="danger full-width">Очистить историю</button>
 </div>
 
 <script src="popup.js"></script>

@@ -38,7 +38,7 @@ body {
     padding: 16px;
 }
 
-/* Заголовок */
+
 .history-header {
     display: flex;
     justify-content: space-between;
@@ -101,7 +101,7 @@ body {
     border-color: #fca5a5;
 }
 
-/* Статистика */
+
 .stats-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -149,7 +149,7 @@ body {
     letter-spacing: 0.5px;
 }
 
-/* Фильтры */
+
 .filters-container {
     background: var(--card-bg);
     padding: 16px;
@@ -197,7 +197,7 @@ body {
     box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
 }
 
-/* Основной контейнер списка */
+
 .history-content {
     background: var(--card-bg);
     border-radius: var(--radius-lg);
@@ -206,7 +206,7 @@ body {
     overflow: hidden;
 }
 
-/* Разделители дней */
+
 .day-section {
     border-bottom: 1px solid var(--border-light);
 }
@@ -242,7 +242,7 @@ body {
     font-weight: 600;
 }
 
-/* Список ошибок */
+
 .errors-list {
     padding: 0;
 }
@@ -372,7 +372,7 @@ body {
     color: #7c3aed;
 }
 
-/* Модальное окно деталей */
+
 .error-detail {
     position: fixed;
     top: 0;
@@ -575,7 +575,7 @@ body {
     font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
 }
 
-/* Состояния */
+
 .hidden {
     display: none !important;
 }
@@ -608,7 +608,7 @@ body {
     animation: slideDown 0.3s ease;
 }
 
-/* Анимации */
+
 @keyframes fadeIn {
     from { opacity: 0; }
     to { opacity: 1; }
@@ -636,7 +636,7 @@ body {
     }
 }
 
-/* Кастомный скроллбар */
+
 .detail-content::-webkit-scrollbar,
 .curl-preview pre::-webkit-scrollbar,
 .detail-message::-webkit-scrollbar {
@@ -663,7 +663,7 @@ body {
     background: #94a3b8;
 }
 
-/* Адаптивность */
+
 @media (max-width: 640px) {
     .history-container {
         padding: 12px;
@@ -711,7 +711,7 @@ body {
     }
 }
 
-/* Улучшенные hover эффекты */
+
 .error-item {
     transition: all 0.2s ease;
 }
@@ -729,7 +729,117 @@ body {
     cursor: pointer;
 }
 
-/* Плавные переходы */
 * {
     transition: color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease;
+}
+
+
+.screenshot-container {
+    background: #f8fafc;
+    padding: 20px;
+    border-radius: var(--radius);
+    border: 1px solid var(--border-light);
+    text-align: center;
+}
+
+.screenshot-image {
+    max-width: 100%;
+    max-height: 400px;
+    border-radius: var(--radius);
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow-sm);
+    margin-bottom: 16px;
+    background: white;
+}
+
+.screenshot-image:not([src]) {
+    display: none;
+}
+
+.screenshot-button {
+    background: var(--success-color) !important;
+    color: white !important;
+    border: none !important;
+}
+
+.screenshot-button:hover {
+    background: #0da271 !important;
+    transform: translateY(-1px);
+}
+
+.no-screenshot-message {
+    text-align: center;
+    color: var(--text-light);
+    font-style: italic;
+    padding: 40px 20px;
+    background: #f8fafc;
+    border-radius: var(--radius);
+    border: 2px dashed var(--border-light);
+}
+
+.no-screenshot-message::before {
+    content: "🖼️";
+    font-size: 24px;
+    display: block;
+    margin-bottom: 8px;
+    opacity: 0.5;
+}
+
+
+.error-item.has-screenshot::before {
+    content: "📷";
+    position: absolute;
+    left: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 14px;
+}
+
+.error-item {
+    position: relative;
+    padding-left: 30px !important;
+}
+
+
+.screenshot-loading {
+    position: relative;
+    min-height: 200px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.screenshot-loading::after {
+    content: "";
+    width: 40px;
+    height: 40px;
+    border: 3px solid var(--border-light);
+    border-top: 3px solid var(--primary-color);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+
+@media (max-width: 640px) {
+    .screenshot-image {
+        max-height: 300px;
+    }
+
+    .screenshot-container {
+        padding: 16px;
+    }
+
+    .error-item.has-screenshot::before {
+        left: 6px;
+        font-size: 12px;
+    }
+
+    .error-item {
+        padding-left: 25px !important;
+    }
 }

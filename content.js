@@ -1,403 +1,230 @@
 let currentTabErrors = [];
 let errorHistory = [];
-const MAX_HISTORY_SIZE = 1000;
 let extensionEnabled = true;
+let notificationStack = []; // Массив для отслеживания уведомлений
 
-// Сохранение истории в chrome.storage
-function saveHistory() {
-  const historyToSave = errorHistory.slice(-MAX_HISTORY_SIZE);
-  chrome.storage.local.set({ errorHistory: historyToSave }, () => {
-    console.log('History saved:', historyToSave.length, 'items');
-  });
-}
-
-// Загрузка истории при старте
-function loadHistory() {
-  chrome.storage.local.get(["errorHistory"], (result) => {
-    if (result.errorHistory) {
-      errorHistory = result.errorHistory;
-      console.log('History loaded:', errorHistory.length, 'items');
-    }
-  });
-}
-
-// Загрузка состояния расширения при старте
-function loadExtensionState() {
-  chrome.storage.local.get(["extensionEnabled"], (result) => {
-    if (result.extensionEnabled !== undefined) {
-      extensionEnabled = result.extensionEnabled;
-    }
-  });
-}
-
-// Инициализация
-loadHistory();
-loadExtensionState();
-
-// Сообщения от background script
-chrome.runtime.onMessage.addListener((request) => {
-  console.log('Error Monitor: Received message:', request);
-
-  // Обработчик переключения состояния расширения
-  if (request.type === "EXTENSION_TOGGLE") {
-    extensionEnabled = request.enabled;
-
-    if (!extensionEnabled) {
-      // Очистка всех уведомлений при выключении
-      document.querySelectorAll(".error-notification").forEach((el) => el.remove());
-    }
-    return;
+chrome.storage.local.get(["extensionEnabled", "errorHistory"], (result) => {
+  extensionEnabled = result.extensionEnabled !== false;
+  if (result.errorHistory) {
+    errorHistory = result.errorHistory;
   }
-
-  // Игнор ошибок, если расширение выключено
-  if (!extensionEnabled) return;
-
-  let errorMessage = '';
-  let statusCode = null;
-
-  if (request.type === "NETWORK_ERROR") {
-    statusCode = request.error.statusCode;
-
-    if (statusCode && statusCode >= 400) {
-      // Это HTTP ошибка (404, 500, etc)
-      errorMessage = `HTTP Error ${statusCode}: ${request.error.url}`;
-    } else {
-      // Это сетевая ошибка (DNS, timeout, etc)
-      errorMessage = `Network Error: ${request.error.url} - ${request.error.error}`;
-    }
-  }
-
-  const networkErrorData = {
-    type: "NETWORK_ERROR",
-    message: errorMessage,
-    timestamp: new Date(request.error.timestamp || Date.now()),
-    details: {
-      ...request.error,
-      statusCode: statusCode
-    },
-    id: generateId()
-  };
-
-  console.log('Error Monitor: Created error data with status:', statusCode);
-
-  currentTabErrors.push(networkErrorData);
-  errorHistory.push({
-    ...networkErrorData,
-    tabUrl: window.location.href,
-    domain: window.location.hostname
-  });
-  saveHistory();
-  showErrorPopup(networkErrorData);
 });
 
-// Уникальный ID для ошибки
-function generateId() {
-  return Date.now().toString(36) + Math.random().toString(36).substr(2);
-}
-
-// Функция показа попапа ошибки
-function showErrorPopup(errorData) {
-  // Игнор показа уведомления при выключенном расширении
+function showNotification(errorData) {
   if (!extensionEnabled) return;
 
   const notification = document.createElement("div");
   notification.className = `error-notification ${errorData.type.toLowerCase()}-notification`;
 
-  // Определение заголовка с учетом статус-кода для сетевых ошибок
-  let title = getErrorTitle(errorData);
+  let title = errorData.type === "CONSOLE_ERROR" ? "Console Error" : "Network Error";
+  if (errorData.details?.statusCode > 0) {
+    title += ` (${errorData.details.statusCode})`;
+  }
 
-  const isRequestError =
-      errorData.type === "NETWORK_ERROR" || errorData.type === "SERVER_ERROR";
+  const isNetworkError = errorData.type === "NETWORK_ERROR";
 
   notification.innerHTML = `
-    <h4>
-      ${title}
-      <button class="close-btn">×</button>
-    </h4>
-    <p class="error-text">${escapeHtml(errorData.message)}</p>
-    <div class="timestamp">
-      <span>${new Date().toLocaleTimeString()} • ${window.location.hostname}</span>
-      ${isRequestError ? '<span class="copy-hint">Click to copy curl</span>' : ""}
-    </div>
-  `;
+        <h4>
+            ${title}
+            <button class="close-btn">×</button>
+        </h4>
+        <p class="error-text">${errorData.message}</p>
+        <div class="timestamp">
+            <span>${new Date().toLocaleTimeString()} • ${window.location.hostname}</span>
+            ${isNetworkError ? '<span class="copy-hint">Click to copy curl</span>' : ""}
+        </div>
+    `;
 
-  // Обработчик для кнопки закрытия
   const closeBtn = notification.querySelector('.close-btn');
   closeBtn.addEventListener('click', (e) => {
     e.stopPropagation();
-    notification.remove();
-    updateNotificationsPosition();
+    removeNotification(notification);
   });
 
-  // Обработчик клика для копирования cURL
-  if (isRequestError) {
+  if (isNetworkError) {
     notification.addEventListener("click", (e) => {
       if (!e.target.classList.contains("close-btn")) {
-        copyCurlCommand(errorData);
-
+        copyCurl(errorData);
         notification.classList.add("copy-success");
-
-        // Тултип
-        const tooltip = document.createElement("div");
-        tooltip.className = "copy-tooltip";
-        tooltip.textContent = "cURL скопирован в буфер обмена!";
-        notification.appendChild(tooltip);
-
-        setTimeout(() => {
-          notification.classList.remove("copy-success");
-          if (tooltip.parentElement) {
-            tooltip.remove();
-          }
-        }, 2000);
+        setTimeout(() => notification.classList.remove("copy-success"), 2000);
       }
     });
   }
 
+
   document.body.appendChild(notification);
 
-  // Обновление позиции всех уведомлений
-  updateNotificationsPosition();
 
-  // Авто-скрытие
+  notificationStack.push(notification);
+  updateNotificationPositions();
+
+  // Автоматическое удаление через 10 секунд
   setTimeout(() => {
-    if (notification.parentElement) {
-      notification.classList.add("fade-out");
-      setTimeout(() => {
-        if (notification.parentElement) {
-          notification.remove();
-          updateNotificationsPosition();
-        }
-      }, 300);
-    }
-  }, 8000);
-}
-
-// Функция для получения заголовка ошибки
-function getErrorTitle(errorData) {
-  console.log('Error Monitor: getErrorTitle called with:', errorData);
-
-  const typeNames = {
-    CONSOLE_ERROR: "Console Error",
-    NETWORK_ERROR: "Network Error",
-  };
-
-  let title = typeNames[errorData.type] || errorData.type;
-
-  if (errorData.details && errorData.details.statusCode && errorData.details.statusCode > 0) {
-    title += ` (${errorData.details.statusCode})`;
-    console.log('Error Monitor: Added status code to title:', title);
-  } else {
-    console.log('Error Monitor: No status code to display. Details:', errorData.details);
-  }
-
-  return title;
+    removeNotification(notification);
+  }, 10000);
 }
 
 // Функция для обновления позиций всех уведомлений
-function updateNotificationsPosition() {
-  const notifications = document.querySelectorAll('.error-notification');
-  const bottomMargin = 20;
-  const notificationHeight = 120;
-  const gap = 10;
+function updateNotificationPositions() {
+  const bottomSpacing = 20;
+  const notificationSpacing = 10;
 
-  notifications.forEach((notification, index) => {
-    const bottomPosition = bottomMargin + (notificationHeight + gap) * index;
+  notificationStack.forEach((notification, index) => {
+    const notificationHeight = notification.offsetHeight;
+    const totalHeight = notificationStack
+        .slice(0, index + 1)
+        .reduce((sum, notif) => sum + notif.offsetHeight + notificationSpacing, 0);
+
+    const bottomPosition = bottomSpacing + totalHeight - notificationHeight - notificationSpacing;
     notification.style.bottom = `${bottomPosition}px`;
-    notification.style.right = '20px';
   });
 }
 
-// Генерация cURL команды
-function generateCurlCommand(errorData) {
-  let url = "";
-  let method = "GET";
+// Функция для удаления уведомления
+function removeNotification(notification) {
+  const index = notificationStack.indexOf(notification);
+  if (index > -1) {
+    notificationStack.splice(index, 1);
 
-  if (errorData.details) {
-    url = errorData.details.url;
-    method = errorData.details.method || "GET";
+
+    notification.style.opacity = '0';
+    notification.style.transform = 'translateX(100%)';
+
+    setTimeout(() => {
+      if (notification.parentElement) {
+        notification.remove();
+      }
+
+      updateNotificationPositions();
+    }, 300);
+  }
+}
+
+function generateId() {
+  return Date.now().toString(36) + Math.random().toString(36).substr(2);
+}
+
+function copyCurl(errorData) {
+  if (!errorData.details || !errorData.details.url) return;
+
+  const curl = `curl -X ${errorData.details.method || "GET"} "${errorData.details.url}" -H "Origin: ${window.location.origin}"`;
+
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(curl);
   } else {
-    const urlMatch = errorData.message.match(/(https?:\/\/[^\s]+)/);
-    if (!urlMatch) return null;
-    url = urlMatch[1];
-  }
-
-  return `curl -X ${method} '${url}' \\
-  -H 'Accept: */*' \\
-  -H 'Accept-Language: en-US,en;q=0.9' \\
-  -H 'Connection: keep-alive' \\
-  -H 'Origin: ${window.location.origin}' \\
-  -H 'Referer: ${window.location.href}' \\
-  -H 'Sec-Fetch-Dest: empty' \\
-  -H 'Sec-Fetch-Mode: cors' \\
-  -H 'Sec-Fetch-Site: same-origin' \\
-  -H 'User-Agent: ${navigator.userAgent}' \\
-  --compressed \\
-  --insecure \\
-  --verbose`;
-}
-
-// Копирование в буфер обмена
-function copyCurlCommand(errorData) {
-  const curlCommand = generateCurlCommand(errorData);
-  if (!curlCommand) return;
-
-  if (navigator.clipboard && navigator.clipboard.writeText) {
-    navigator.clipboard.writeText(curlCommand)
-        .then(() => {
-          console.log("cURL скопирован в буфер обмена!");
-        })
-        .catch((err) => {
-          console.warn("Modern clipboard API failed, using fallback:", err);
-          fallbackCopyToClipboard(curlCommand);
-        });
-  } else {
-    fallbackCopyToClipboard(curlCommand);
+    const textArea = document.createElement("textarea");
+    textArea.value = curl;
+    document.body.appendChild(textArea);
+    textArea.select();
+    document.execCommand('copy');
+    document.body.removeChild(textArea);
   }
 }
 
-// Fallback метод копирования
-function fallbackCopyToClipboard(text) {
-  const textArea = document.createElement("textarea");
-  textArea.value = text;
-  textArea.style.position = "fixed";
-  textArea.style.left = "-999999px";
-  textArea.style.top = "-999999px";
-  document.body.appendChild(textArea);
-  textArea.focus();
-  textArea.select();
+function handleError(errorData) {
+  currentTabErrors.push(errorData);
+  errorHistory.push(errorData);
 
-  try {
-    const successful = document.execCommand('copy');
-    if (successful) {
-      console.log("cURL скопирован в буфер обмена (fallback method)!");
-    } else {
-      console.error("Fallback copy failed");
-      showCopyError(text);
+  const toSave = errorHistory.slice(-1000);
+  chrome.storage.local.set({ errorHistory: toSave });
+
+  showNotification(errorData);
+}
+
+chrome.runtime.onMessage.addListener((request) => {
+  if (request.type === "EXTENSION_TOGGLE") {
+    extensionEnabled = request.enabled;
+    if (!extensionEnabled) {
+      // Удаляем все уведомления при отключении расширения
+      notificationStack.forEach(notification => {
+        if (notification.parentElement) {
+          notification.remove();
+        }
+      });
+      notificationStack = [];
     }
-  } catch (err) {
-    console.error("Fallback copy error:", err);
-    showCopyError(text);
+    return;
   }
 
-  document.body.removeChild(textArea);
-}
+  if (!extensionEnabled) return;
 
-// Ошибка копирования
-function showCopyError(text) {
-  const errorMsg = document.createElement("div");
-  errorMsg.style.cssText = `
-    position: fixed;
-    top: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: #ff4444;
-    color: white;
-    padding: 10px;
-    border-radius: 5px;
-    z-index: 100000;
-  `;
-  errorMsg.textContent = "Не удалось скопировать. Текст показан в консоли.";
-  document.body.appendChild(errorMsg);
+  if (request.type === "NETWORK_ERROR") {
+    const errorObj = {
+      type: "NETWORK_ERROR",
+      message: request.error.statusCode >= 400
+          ? `HTTP ${request.error.statusCode}: ${request.error.url}`
+          : `Network Error: ${request.error.url}`,
+      timestamp: new Date(),
+      details: request.error,
+      id: generateId(),
+      tabUrl: window.location.href,
+      domain: window.location.hostname
+    };
 
-  console.log("cURL command for manual copy:", text);
+    handleError(errorObj);
+  }
+});
 
-  setTimeout(() => {
-    if (errorMsg.parentElement) {
-      errorMsg.remove();
-    }
-  }, 3000);
-}
-
-// Экранирование HTML
-function escapeHtml(text) {
-  const div = document.createElement("div");
-  div.textContent = text;
-  return div.innerHTML;
-}
-
-// Перехватчик ошибок консоли
-const originalConsoleError = console.error;
+const originalError = console.error;
 console.error = function (...args) {
-  originalConsoleError.apply(console, args);
+  originalError.apply(console, args);
 
-  // Если расширение выключено, не обрабатываем ошибки
   if (!extensionEnabled) return;
 
   const errorData = {
     type: "CONSOLE_ERROR",
-    message: args
-        .map((arg) =>
-            typeof arg === "object" ? JSON.stringify(arg) : String(arg),
-        )
-        .join(" "),
+    message: args.map(arg => typeof arg === "object" ? JSON.stringify(arg) : String(arg)).join(" "),
     timestamp: new Date(),
-    id: generateId()
-  };
-  currentTabErrors.push(errorData);
-  errorHistory.push({
-    ...errorData,
+    id: generateId(),
     tabUrl: window.location.href,
     domain: window.location.hostname
-  });
-  saveHistory();
-  showErrorPopup(errorData);
+  };
+
+  handleError(errorData);
 };
 
-// Перехватчик JavaScript ошибок
 window.addEventListener("error", (event) => {
-  // Если расширение выключено, не обрабатываем ошибки
   if (!extensionEnabled) return;
 
   const errorData = {
     type: "CONSOLE_ERROR",
-    message: `${event.message} (${event.filename}:${event.lineno}:${event.colno})`,
+    message: event.message,
     timestamp: new Date(),
-    id: generateId()
-  };
-  currentTabErrors.push(errorData);
-  errorHistory.push({
-    ...errorData,
+    id: generateId(),
     tabUrl: window.location.href,
     domain: window.location.hostname
-  });
-  saveHistory();
-  showErrorPopup(errorData);
-  return false;
+  };
+
+  handleError(errorData);
 });
 
-// Перехватчик Promise rejections
 window.addEventListener("unhandledrejection", (event) => {
-  // Если расширение выключено, не обрабатываем ошибки
   if (!extensionEnabled) return;
 
   const errorData = {
     type: "CONSOLE_ERROR",
-    message: `Unhandled Promise Rejection: ${event.reason}`,
+    message: `Promise Rejection: ${event.reason}`,
     timestamp: new Date(),
-    id: generateId()
-  };
-  currentTabErrors.push(errorData);
-  errorHistory.push({
-    ...errorData,
+    id: generateId(),
     tabUrl: window.location.href,
     domain: window.location.hostname
-  });
-  saveHistory();
-  showErrorPopup(errorData);
+  };
+
+  handleError(errorData);
 });
 
-// Очистка уведомлений
-window.addEventListener("beforeunload", () => {
-  document.querySelectorAll(".error-notification").forEach((el) => el.remove());
-});
-
-// Экспорт функций для popup
 window.errorMonitor = {
-  getCurrentErrors: () => extensionEnabled ? currentTabErrors : [],
+  getCurrentErrors: () => currentTabErrors,
   getErrorHistory: () => errorHistory,
   clearCurrentErrors: () => {
     currentTabErrors = [];
-    document.querySelectorAll(".error-notification").forEach((el) => el.remove());
+    // Удаляем все уведомления при очистке
+    notificationStack.forEach(notification => {
+      if (notification.parentElement) {
+        notification.remove();
+      }
+    });
+    notificationStack = [];
   },
   clearHistory: () => {
     errorHistory = [];

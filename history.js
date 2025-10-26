@@ -11,7 +11,8 @@ document.addEventListener('DOMContentLoaded', () => {
 function loadHistory() {
     chrome.storage.local.get(["errorHistory"], (result) => {
         if (result.errorHistory) {
-            allHistory = result.errorHistory;
+            // СОРТИРУЕМ ПО УБЫВАНИЮ ДАТЫ (НОВЫЕ СВЕРХУ)
+            allHistory = result.errorHistory.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
             filteredHistory = [...allHistory];
             renderHistory();
             updateStats();
@@ -23,23 +24,46 @@ function loadHistory() {
 
 // Настройка обработчиков событий
 function setupEventListeners() {
-    // Кнопка назад
     document.getElementById('backButton').addEventListener('click', () => {
         window.close();
     });
 
-    // Фильтры
     document.getElementById('typeFilter').addEventListener('change', applyFilters);
     document.getElementById('timeFilter').addEventListener('change', applyFilters);
     document.getElementById('searchInput').addEventListener('input', applyFilters);
 
-    // Очистка истории
     document.getElementById('clearHistory').addEventListener('click', clearHistory);
-
-    // Детали ошибки
     document.getElementById('backToList').addEventListener('click', showList);
     document.getElementById('copyCurl').addEventListener('click', copyCurl);
     document.getElementById('copyDetails').addEventListener('click', copyErrorDetails);
+}
+
+// Соответствует ли ошибка фильтру времени
+function matchesTimeFilter(error, timeFilter) {
+    if (timeFilter === 'all') return true;
+
+    const errorTime = new Date(error.timestamp);
+    const now = new Date();
+
+    switch (timeFilter) {
+        case 'today': {
+            const errorDate = new Date(errorTime.getFullYear(), errorTime.getMonth(), errorTime.getDate());
+            const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            return errorDate.getTime() === today.getTime();
+        }
+        case 'week': {
+            const weekAgo = new Date(now);
+            weekAgo.setDate(weekAgo.getDate() - 7);
+            return errorTime >= weekAgo;
+        }
+        case 'month': {
+            const monthAgo = new Date(now);
+            monthAgo.setMonth(monthAgo.getMonth() - 1);
+            return errorTime >= monthAgo;
+        }
+        default:
+            return true;
+    }
 }
 
 // Применение фильтров
@@ -48,6 +72,8 @@ function applyFilters() {
     const timeFilter = document.getElementById('timeFilter').value;
     const searchText = document.getElementById('searchInput').value.toLowerCase();
 
+    console.log('Applying filters:', { typeFilter, timeFilter, searchText });
+
     filteredHistory = allHistory.filter(error => {
         // Фильтр по типу
         if (typeFilter !== 'all' && error.type !== typeFilter) {
@@ -55,28 +81,8 @@ function applyFilters() {
         }
 
         // Фильтр по времени
-        if (timeFilter !== 'all') {
-            const errorTime = new Date(error.timestamp);
-            const now = new Date();
-
-            const errorDate = new Date(errorTime.getFullYear(), errorTime.getMonth(), errorTime.getDate());
-            const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-            const weekAgo = new Date(today);
-            weekAgo.setDate(weekAgo.getDate() - 7);
-            const monthAgo = new Date(today);
-            monthAgo.setMonth(monthAgo.getMonth() - 1);
-
-            switch (timeFilter) {
-                case 'today':
-                    if (errorDate.getTime() !== today.getTime()) return false;
-                    break;
-                case 'week':
-                    if (errorDate < weekAgo) return false;
-                    break;
-                case 'month':
-                    if (errorDate < monthAgo) return false;
-                    break;
-            }
+        if (!matchesTimeFilter(error, timeFilter)) {
+            return false;
         }
 
         // Поиск по сообщению
@@ -87,6 +93,7 @@ function applyFilters() {
         return true;
     });
 
+    console.log('Filtered history count:', filteredHistory.length);
     renderHistory();
     updateStats();
 }
@@ -138,13 +145,8 @@ function renderHistory() {
         return;
     }
 
-    // Сортировка по времени (новые сверху)
-    const sortedHistory = [...filteredHistory].sort((a, b) =>
-        new Date(b.timestamp) - new Date(a.timestamp)
-    );
-
     // Группировка по дням
-    const groupedErrors = groupErrorsByDay(sortedHistory);
+    const groupedErrors = groupErrorsByDay(filteredHistory);
 
     let html = '';
 
@@ -165,9 +167,10 @@ function renderHistory() {
             dayErrors.forEach((error, index) => {
                 const statusCode = error.details?.statusCode;
                 const statusIndicator = getStatusIndicator(statusCode, error.type);
+                const hasScreenshotClass = error.hasScreenshot ? 'has-screenshot' : '';
 
                 html += `
-                    <div class="error-item" data-date="${dateKey}" data-index="${index}">
+                    <div class="error-item ${hasScreenshotClass}" data-date="${dateKey}" data-index="${index}">
                         <div class="error-header">
                             <span class="error-type-badge ${error.type === 'CONSOLE_ERROR' ? 'console' : 'network'}">
                                 ${error.type === 'CONSOLE_ERROR' ? 'Console Error' : 'Network Error'}
@@ -201,9 +204,6 @@ function renderHistory() {
     });
 }
 
-    listElement.innerHTML = html;
-
-
 // Получение индикатора статуса для сетевых ошибок
 function getStatusIndicator(statusCode, errorType) {
     if (errorType !== 'NETWORK_ERROR' || !statusCode) return '';
@@ -228,16 +228,19 @@ function showErrorDetail(error) {
     document.getElementById('historyList').classList.add('hidden');
     document.getElementById('errorDetail').classList.remove('hidden');
 
-    // Заполняем детали
+    // Заполнение деталей
     document.getElementById('detailType').textContent = error.type === 'CONSOLE_ERROR' ? 'Console Error' : 'Network Error';
-    document.getElementById('detailType').className = `error-type ${error.type === 'CONSOLE_ERROR' ? 'console' : 'network'}`;
-    document.getElementById('detailType').style.background = error.type === 'CONSOLE_ERROR' ?
-        'linear-gradient(135deg, #d32f2f, #f44336)' :
-        'linear-gradient(135deg, #1976d2, #2196f3)';
+    document.getElementById('detailType').className = `detail-type ${error.type === 'CONSOLE_ERROR' ? 'console' : 'network'}`;
 
     document.getElementById('detailTime').textContent = formatDetailedTime(error.timestamp);
     document.getElementById('detailUrl').textContent = error.tabUrl || 'N/A';
     document.getElementById('detailMessage').textContent = error.message;
+
+    // Сохранение текущей ошибки
+    window.currentErrorDetail = error;
+
+    // Загрузка скриншота
+    loadScreenshotForError(error);
 
     // Детали для сетевых ошибок
     const networkSection = document.getElementById('networkDetails');
@@ -265,6 +268,22 @@ function showErrorDetail(error) {
     }
 }
 
+// Загрузка скриншота для ошибки
+function loadScreenshotForError(error) {
+    const screenshotSection = document.getElementById('screenshotSection');
+    const noScreenshotSection = document.getElementById('noScreenshot');
+    const screenshotImg = document.getElementById('screenshotImage');
+
+    if (error.screenshot) {
+        screenshotImg.src = error.screenshot;
+        screenshotSection.classList.remove('hidden');
+        noScreenshotSection.classList.add('hidden');
+    } else {
+        screenshotSection.classList.add('hidden');
+        noScreenshotSection.classList.remove('hidden');
+    }
+}
+
 // Показать список
 function showList() {
     document.getElementById('errorDetail').classList.add('hidden');
@@ -279,16 +298,12 @@ function generateCurlCommand(error) {
     const method = error.details.method || 'GET';
     const origin = error.tabUrl ? new URL(error.tabUrl).origin : window.location.origin;
 
-    return `curl -X ${method} '${url}' \\
-  -H 'Accept: */*' \\
-  -H 'Accept-Language: en-US,en;q=0.9' \\
-  -H 'Connection: keep-alive' \\
-  -H 'Origin: ${origin}' \\
-  -H 'Referer: ${error.tabUrl || window.location.href}' \\
-  -H 'User-Agent: ${navigator.userAgent}' \\
+    return `curl -X ${method} "${url}" \\
+  -H "Accept: */*" \\
+  -H "Origin: ${origin}" \\
+  -H "Referer: ${error.tabUrl || window.location.href}" \\
   --compressed \\
-  --insecure \\
-  --verbose`;
+  --insecure`;
 }
 
 // Копирование cURL
@@ -305,7 +320,9 @@ function copyCurl() {
 
 // Копирование деталей ошибки
 function copyErrorDetails() {
-    const error = getCurrentErrorDetail();
+    const error = window.currentErrorDetail;
+    if (!error) return;
+
     const details = `
 Тип: ${error.type === 'CONSOLE_ERROR' ? 'Console Error' : 'Network Error'}
 Время: ${formatDetailedTime(error.timestamp)}
@@ -318,7 +335,8 @@ ${error.details ? `
 - Статус: ${error.details.statusCode || 'N/A'}
 - Тип: ${error.details.type || 'N/A'}
 ` : ''}
-  `.trim();
+${error.hasScreenshot ? 'Есть скриншот: Да' : 'Есть скриншот: Нет'}
+    `.trim();
 
     navigator.clipboard.writeText(details).then(() => {
         showSuccessMessage('Детали ошибки скопированы!');
@@ -326,12 +344,6 @@ ${error.details ? `
         console.error('Failed to copy details:', err);
         showSuccessMessage('Ошибка копирования деталей');
     });
-}
-
-// Получить текущую ошибку из деталей
-function getCurrentErrorDetail() {
-    const message = document.getElementById('detailMessage').textContent;
-    return filteredHistory.find(error => error.message === message);
 }
 
 // Обновление статистики
@@ -389,7 +401,8 @@ function formatTime(timestamp) {
     const date = new Date(timestamp);
     return date.toLocaleTimeString('ru-RU', {
         hour: '2-digit',
-        minute: '2-digit'
+        minute: '2-digit',
+        second: '2-digit'
     });
 }
 

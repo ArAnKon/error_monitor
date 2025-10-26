@@ -6,7 +6,7 @@
 </head>
 <body>
 <div class="history-container">
-  <!-- Заголовок -->
+
   <div class="history-header">
     <h3>История ошибок</h3>
     <div class="header-controls">
@@ -15,7 +15,7 @@
     </div>
   </div>
 
-  <!-- Статистика -->
+
   <div class="stats-grid">
     <div class="stat-card total">
       <div class="stat-number" id="totalCount">0</div>
@@ -31,7 +31,7 @@
     </div>
   </div>
 
-  <!-- Фильтры -->
+
   <div class="filters-container">
     <div class="filters-row">
       <div class="filter-group">
@@ -60,14 +60,14 @@
     </div>
   </div>
 
-  <!-- Основной контент -->
+
   <div class="history-content">
     <div id="historyList">
-      <!-- Список ошибок будет здесь -->
+
     </div>
   </div>
 
-  <!-- Модальное окно деталей -->
+
   <div id="errorDetail" class="error-detail hidden">
     <div class="detail-modal">
       <div class="detail-header">
@@ -96,6 +96,22 @@
           <div id="detailMessage" class="detail-message"></div>
         </div>
 
+
+        <div id="screenshotSection" class="detail-section hidden">
+          <label>Скриншот страницы</label>
+          <div class="screenshot-container">
+            <img id="screenshotImage" class="screenshot-image" alt="Скриншот ошибки">
+          </div>
+        </div>
+
+        <div id="noScreenshot" class="detail-section hidden">
+          <label>Скриншот страницы</label>
+          <div class="no-screenshot-message">
+            Скриншот не был сделан для этой ошибки
+          </div>
+        </div>
+
+
         <div id="networkDetails" class="detail-section hidden">
           <label>Детали сетевого запроса</label>
           <div class="network-details">
@@ -119,7 +135,7 @@
         </div>
 
         <div class="detail-actions">
-          <button id="copyCurl" class="action-button curl-button">
+          <button id="copyCurl" class="action-button curl-button hidden">
             📋 Скопировать cURL
           </button>
           <button id="copyDetails" class="action-button copy-button">

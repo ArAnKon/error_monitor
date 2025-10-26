@@ -1,6 +1,5 @@
 .error-notification {
   position: fixed;
-  bottom: 20px;
   right: 20px;
   max-width: 400px;
   background: #ffebee;
@@ -13,17 +12,19 @@
   font-family: Arial, sans-serif;
   animation: slideIn 0.3s ease;
   cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.error-notification:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+  transition: all 0.3s ease;
+  opacity: 1;
+  transform: translateX(0);
 }
 
 .network-notification {
   background: #e3f2fd;
   border: 2px solid #2196f3;
+}
+
+.error-notification:hover {
+  transform: translateY(-2px) translateX(0);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
 }
 
 .error-notification h4 {
@@ -139,4 +140,3 @@
   border-right: 5px solid transparent;
   border-top: 5px solid #333;
 }
-
