@@ -1,22 +1,38 @@
 {
   "manifest_version": 3,
   "name": "Error Monitor",
-  "version": "1.0",
-  "description": "Показывает ошибки текущей вкладки в виде popup",
-  "permissions": ["activeTab", "scripting", "tabs", "webRequest"],
+  "version": "1.5",
+  "description": "Показывает ошибки текущей вкладки в виде popup с скриншотами",
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "tabs",
+    "webRequest",
+    "storage",
+    "unlimitedStorage"
+  ],
 
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
-      "js": ["content.js"],
-      "css": ["styles/notification.css"]
+      "js": [
+        "content.js",
+        "screenshot.js"
+      ],
+      "css": ["styles/notification.css"],
+      "run_at": "document_end"
     }
   ],
 
   "action": {
     "default_popup": "popup.html",
     "default_title": "Error Monitor",
-    "default_icon": "icons/icon.png"
+    "default_icon": {
+      "16": "icons/icon.png",
+      "32": "icons/icon.png",
+      "48": "icons/icon.png",
+      "128": "icons/icon.png"
+    }
   },
 
   "host_permissions": ["<all_urls>"],
@@ -27,8 +43,21 @@
 
   "web_accessible_resources": [
     {
-      "resources": ["styles/*", "icons/*"],
+      "resources": [
+        "styles/*",
+        "history.html",
+        "history.js",
+        "history.css",
+        "screenshot.js"
+      ],
       "matches": ["<all_urls>"]
     }
-  ]
+  ],
+
+  "icons": {
+    "16": "icons/icon.png",
+    "32": "icons/icon.png",
+    "48": "icons/icon.png",
+    "128": "icons/icon.png"
+  }
 }
