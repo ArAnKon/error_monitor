@@ -9,11 +9,27 @@
 - Перехват JavaScript ошибок
 - Перехват Network ошибок
 - Перехват Console ошибок
-- Экспорт истории ошибок в JSON формате
+  
+![Image alt](https://github.com/ArAnKon/error_monitor/blob/main/demonstration/notifications.png)
+
+- Общая история ошибок в отдельном окне
+
+![Image alt](https://github.com/ArAnKon/error_monitor/blob/2235acc7ceee96534b86393e7210cadbf2e252b8/demonstration/history.png)
+
+- Детализация ошибки с скриншотом и без
+
+![Image alt](https://github.com/ArAnKon/error_monitor/blob/2235acc7ceee96534b86393e7210cadbf2e252b8/demonstration/details_error_screen.png)
+![Image alt](https://github.com/ArAnKon/error_monitor/blob/2235acc7ceee96534b86393e7210cadbf2e252b8/demonstration/details_eror_no_screen.png)
+
 - Сохранение/очистка истории ошибок
 - Копирование cURL из pop-up уведомления
+  
+![Image alt](https://github.com/ArAnKon/error_monitor/blob/2235acc7ceee96534b86393e7210cadbf2e252b8/demonstration/copy_curl.png)
 
-![Image alt](https://github.com/ArAnKon/error_monitor/blob/main/demonstration/notifications.png)
+- Создание скриншота и его автоматическое скачивание
+- Экспорт истории ошибок в JSON формате
+
+
 
 ## 📦 Установка
 
