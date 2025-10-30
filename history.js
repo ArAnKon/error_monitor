@@ -29,6 +29,7 @@ function setupEventListeners() {
     });
 
     document.getElementById('typeFilter').addEventListener('change', applyFilters);
+    document.getElementById('statusFilter').addEventListener('change', applyFilters);
     document.getElementById('timeFilter').addEventListener('change', applyFilters);
     document.getElementById('searchInput').addEventListener('input', applyFilters);
 
@@ -45,11 +46,16 @@ function matchesTimeFilter(error, timeFilter) {
     const errorTime = new Date(error.timestamp);
     const now = new Date();
 
+    if (isNaN(errorTime.getTime())) {
+        return false;
+    }
+
     switch (timeFilter) {
         case 'today': {
-            const errorDate = new Date(errorTime.getFullYear(), errorTime.getMonth(), errorTime.getDate());
-            const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-            return errorDate.getTime() === today.getTime();
+            const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            const todayEnd = new Date(todayStart);
+            todayEnd.setDate(todayEnd.getDate() + 1);
+            return errorTime >= todayStart && errorTime < todayEnd;
         }
         case 'week': {
             const weekAgo = new Date(now);
@@ -67,12 +73,12 @@ function matchesTimeFilter(error, timeFilter) {
 }
 
 // Применение фильтров
+// Применение фильтров
 function applyFilters() {
     const typeFilter = document.getElementById('typeFilter').value;
     const timeFilter = document.getElementById('timeFilter').value;
+    const statusFilter = document.getElementById('statusFilter').value;
     const searchText = document.getElementById('searchInput').value.toLowerCase();
-
-    console.log('Applying filters:', { typeFilter, timeFilter, searchText });
 
     filteredHistory = allHistory.filter(error => {
         // Фильтр по типу
@@ -85,6 +91,23 @@ function applyFilters() {
             return false;
         }
 
+        // Фильтр по статус коду (только для сетевых ошибок)
+        if (statusFilter !== 'all' && error.type === 'NETWORK_ERROR') {
+            const statusCode = error.details?.statusCode;
+
+            switch (statusFilter) {
+                case '4xx':
+                    if (!statusCode || statusCode < 400 || statusCode >= 500) return false;
+                    break;
+                case '5xx':
+                    if (!statusCode || statusCode < 500) return false;
+                    break;
+                case 'network-error':
+                    if (statusCode !== 0) return false;
+                    break;
+            }
+        }
+
         // Поиск по сообщению
         if (searchText && !error.message.toLowerCase().includes(searchText)) {
             return false;
@@ -93,7 +116,6 @@ function applyFilters() {
         return true;
     });
 
-    console.log('Filtered history count:', filteredHistory.length);
     renderHistory();
     updateStats();
 }
