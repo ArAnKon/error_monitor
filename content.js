@@ -125,9 +125,12 @@ function handleError(errorData) {
   currentTabErrors.push(errorData);
   errorHistory.push(errorData);
 
-  const toSave = errorHistory.slice(-1000);
-  chrome.storage.local.set({ errorHistory: toSave });
+  const toSave = errorHistory.slice(-1000).map(error => ({
+    ...error,
+    timestamp: error.timestamp instanceof Date ? error.timestamp.toISOString() : error.timestamp
+  }));
 
+  chrome.storage.local.set({ errorHistory: toSave });
   showNotification(errorData);
 }
 
