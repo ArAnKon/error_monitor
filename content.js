@@ -2,11 +2,16 @@ let currentTabErrors = [];
 let errorHistory = [];
 let extensionEnabled = true;
 let notificationStack = []; // Массив для отслеживания уведомлений
+let notificationPosition = "bottom-right"; // Положение уведомлений по умолчанию
 
-chrome.storage.local.get(["extensionEnabled", "errorHistory"], (result) => {
+// Загрузка настроек при инициализации
+chrome.storage.local.get(["extensionEnabled", "errorHistory", "notificationPosition"], (result) => {
   extensionEnabled = result.extensionEnabled !== false;
   if (result.errorHistory) {
     errorHistory = result.errorHistory;
+  }
+  if (result.notificationPosition) {
+    notificationPosition = result.notificationPosition;
   }
 });
 
@@ -16,6 +21,15 @@ function showNotification(errorData) {
   const notification = document.createElement("div");
   notification.className = `error-notification ${errorData.type.toLowerCase()}-notification`;
 
+  // Устанавливаем позицию уведомления
+  if (notificationPosition === "top-right") {
+    notification.style.top = '20px';
+    notification.style.bottom = 'auto';
+  } else {
+    notification.style.bottom = '20px';
+    notification.style.top = 'auto';
+  }
+
   let title = errorData.type === "CONSOLE_ERROR" ? "Console Error" : "Network Error";
   if (errorData.details?.statusCode > 0) {
     title += ` (${errorData.details.statusCode})`;
@@ -23,6 +37,7 @@ function showNotification(errorData) {
 
   const isNetworkError = errorData.type === "NETWORK_ERROR";
 
+  // Обрезаем длинное сообщение для уведомления
   const maxMessageLength = 150;
   let displayMessage = errorData.message;
   if (displayMessage.length > maxMessageLength) {
@@ -41,7 +56,6 @@ function showNotification(errorData) {
         </div>
     `;
 
-
   const closeBtn = notification.querySelector('.close-btn');
   closeBtn.addEventListener('click', (e) => {
     e.stopPropagation();
@@ -58,10 +72,7 @@ function showNotification(errorData) {
     });
   }
 
-
   document.body.appendChild(notification);
-
-
   notificationStack.push(notification);
   updateNotificationPositions();
 
@@ -73,18 +84,27 @@ function showNotification(errorData) {
 
 // Функция для обновления позиций всех уведомлений
 function updateNotificationPositions() {
-  const bottomSpacing = 20;
-  const notificationSpacing = 10;
+  const spacing = 10;
 
-  notificationStack.forEach((notification, index) => {
-    const notificationHeight = notification.offsetHeight;
-    const totalHeight = notificationStack
-        .slice(0, index + 1)
-        .reduce((sum, notif) => sum + notif.offsetHeight + notificationSpacing, 0);
+  if (notificationPosition === "top-right") {
+    // Позиционирование сверху справа
+    let currentTop = 20;
 
-    const bottomPosition = bottomSpacing + totalHeight - notificationHeight - notificationSpacing;
-    notification.style.bottom = `${bottomPosition}px`;
-  });
+    notificationStack.forEach((notification) => {
+      notification.style.top = `${currentTop}px`;
+      notification.style.bottom = 'auto';
+      currentTop += notification.offsetHeight + spacing;
+    });
+  } else {
+    // Позиционирование снизу справа (по умолчанию)
+    let currentBottom = 20;
+
+    notificationStack.forEach((notification) => {
+      notification.style.bottom = `${currentBottom}px`;
+      notification.style.top = 'auto';
+      currentBottom += notification.offsetHeight + spacing;
+    });
+  }
 }
 
 // Функция для удаления уведомления
@@ -93,7 +113,6 @@ function removeNotification(notification) {
   if (index > -1) {
     notificationStack.splice(index, 1);
 
-
     notification.style.opacity = '0';
     notification.style.transform = 'translateX(100%)';
 
@@ -101,7 +120,6 @@ function removeNotification(notification) {
       if (notification.parentElement) {
         notification.remove();
       }
-
       updateNotificationPositions();
     }, 300);
   }
@@ -111,7 +129,7 @@ function generateId() {
   return Date.now().toString(36) + Math.random().toString(36).substr(2);
 }
 
-// ФУНКЦИЯ copyCurl - КОПИРУЕТ CURL КОМАНДУ ДЛЯ BASH
+// Функция copyCurl - копирует CURL команду для bash
 function copyCurl(errorData) {
   if (!errorData.details || !errorData.details.url) return;
 
@@ -145,7 +163,7 @@ function copyCurl(errorData) {
   }
 }
 
-// ФУНКЦИЯ ГЕНЕРАЦИИ CURL КОМАНДЫ ДЛЯ BASH
+// Функция генерации CURL команды для bash
 function generateCurlCommand(error) {
   if (!error.details || !error.details.url) return '# cURL не доступен для этой ошибки';
 
@@ -170,6 +188,7 @@ function handleError(errorData) {
   showNotification(errorData);
 }
 
+// Обработчик сообщений от расширения
 chrome.runtime.onMessage.addListener((request) => {
   if (request.type === "EXTENSION_TOGGLE") {
     extensionEnabled = request.enabled;
@@ -182,6 +201,22 @@ chrome.runtime.onMessage.addListener((request) => {
       });
       notificationStack = [];
     }
+    return;
+  }
+
+  if (request.type === "NOTIFICATION_POSITION_UPDATE") {
+    notificationPosition = request.position;
+    // Пересоздаем все уведомления с новой позицией
+    notificationStack.forEach(notification => {
+      if (notification.parentElement) {
+        notification.remove();
+      }
+    });
+    notificationStack = [];
+    // Показываем текущие ошибки с новой позицией
+    currentTabErrors.forEach(error => {
+      showNotification(error);
+    });
     return;
   }
 
@@ -204,6 +239,7 @@ chrome.runtime.onMessage.addListener((request) => {
   }
 });
 
+// Перехват console.error
 const originalError = console.error;
 console.error = function (...args) {
   originalError.apply(console, args);
@@ -222,6 +258,7 @@ console.error = function (...args) {
   handleError(errorData);
 };
 
+// Перехват глобальных ошибок
 window.addEventListener("error", (event) => {
   if (!extensionEnabled) return;
 
@@ -237,6 +274,7 @@ window.addEventListener("error", (event) => {
   handleError(errorData);
 });
 
+// Перехват необработанных Promise rejection
 window.addEventListener("unhandledrejection", (event) => {
   if (!extensionEnabled) return;
 
@@ -252,6 +290,7 @@ window.addEventListener("unhandledrejection", (event) => {
   handleError(errorData);
 });
 
+// Глобальный объект для доступа из popup
 window.errorMonitor = {
   getCurrentErrors: () => currentTabErrors,
   getErrorHistory: () => errorHistory,
