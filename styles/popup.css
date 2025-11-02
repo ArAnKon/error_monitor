@@ -1,5 +1,5 @@
 body {
-    width: 380px;
+    width: 420px; /* Увеличили ширину для новых настроек */
     padding: 15px;
     font-family: Arial, sans-serif;
     background: #ffffff;
@@ -63,7 +63,7 @@ h3 {
     color: #7b1fa2;
 }
 
-/* ДОБАВЛЕНЫ СТИЛИ ДЛЯ НАСТРОЕК */
+/* СТИЛИ ДЛЯ НАСТРОЕК */
 .settings-section {
     background: #f8f9fa;
     padding: 12px;
@@ -75,7 +75,12 @@ h3 {
 .setting-item {
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.setting-item:last-child {
+    margin-bottom: 0;
 }
 
 .setting-item label {
@@ -97,6 +102,63 @@ h3 {
     outline: none;
     border-color: #1e90ff;
     box-shadow: 0 0 0 2px rgba(30, 144, 255, 0.2);
+}
+
+/* СТИЛИ ДЛЯ КАСТОМНЫХ ЧЕКБОКСОВ */
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    font-size: 13px;
+    color: #495057;
+    user-select: none;
+}
+
+.checkbox-label.small {
+    font-size: 12px;
+}
+
+.checkbox-label input[type="checkbox"] {
+    display: none;
+}
+
+.checkbox-custom {
+    width: 16px;
+    height: 16px;
+    border: 2px solid #ddd;
+    border-radius: 3px;
+    background: white;
+    position: relative;
+    transition: all 0.2s ease;
+}
+
+.checkbox-label input[type="checkbox"]:checked + .checkbox-custom {
+    background: #1e90ff;
+    border-color: #1e90ff;
+}
+
+.checkbox-label input[type="checkbox"]:checked + .checkbox-custom::after {
+    content: "✓";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: white;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.checkbox-label:hover .checkbox-custom {
+    border-color: #1e90ff;
+}
+
+/* СЕТКА ДЛЯ СТАТУС-КОДОВ */
+.status-codes-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-top: 8px;
 }
 
 .buttons {
