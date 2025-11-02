@@ -20,11 +20,9 @@ function setupEventListeners() {
   document.getElementById("exportHistory").addEventListener("click", exportHistory);
   document.getElementById("clearHistory").addEventListener("click", clearHistory);
 
-  // Обработчики для новых настроек
   document.getElementById("notificationPosition").addEventListener("change", saveNotificationSettings);
   document.getElementById("filterByStatusCode").addEventListener("change", toggleStatusCodeFilter);
 
-  // Обработчики для чекбоксов статус-кодов
   document.querySelectorAll('.status-code-checkbox').forEach(checkbox => {
     checkbox.addEventListener('change', saveStatusCodeSettings);
   });
@@ -38,7 +36,6 @@ function loadExtensionState() {
   });
 }
 
-// Загрузка настроек положения уведомлений
 function loadNotificationSettings() {
   chrome.storage.local.get(["notificationPosition"], (result) => {
     const position = result.notificationPosition || "bottom-right";
@@ -46,7 +43,6 @@ function loadNotificationSettings() {
   });
 }
 
-// Загрузка настроек фильтрации по статус-кодам
 function loadStatusCodeSettings() {
   chrome.storage.local.get(["filterByStatusCode", "selectedStatusCodes"], (result) => {
     const filterEnabled = result.filterByStatusCode || false;
@@ -54,22 +50,20 @@ function loadStatusCodeSettings() {
 
     document.getElementById("filterByStatusCode").checked = filterEnabled;
 
-    // Показать/скрыть секцию с выбором статус-кодов
     const statusCodesSection = document.getElementById("statusCodesSection");
-    statusCodesSection.style.display = filterEnabled ? "block" : "none";
+    if (filterEnabled) {
+      statusCodesSection.classList.add("visible");
+    }
 
-    // Устанавливаем выбранные статус-коды
     document.querySelectorAll('.status-code-checkbox').forEach(checkbox => {
       checkbox.checked = selectedCodes.includes(checkbox.value);
     });
   });
 }
 
-// Сохранение настроек положения уведомлений
 function saveNotificationSettings() {
   const position = document.getElementById("notificationPosition").value;
   chrome.storage.local.set({ notificationPosition: position }, () => {
-    // Обновляем положение уведомлений на всех вкладках
     chrome.tabs.query({}, (tabs) => {
       tabs.forEach(tab => {
         if (tab.id) {
@@ -83,15 +77,17 @@ function saveNotificationSettings() {
   });
 }
 
-// Включение/выключение фильтрации по статус-кодам
 function toggleStatusCodeFilter() {
   const filterEnabled = document.getElementById("filterByStatusCode").checked;
   const statusCodesSection = document.getElementById("statusCodesSection");
 
-  statusCodesSection.style.display = filterEnabled ? "block" : "none";
+  if (filterEnabled) {
+    statusCodesSection.classList.add("visible");
+  } else {
+    statusCodesSection.classList.remove("visible");
+  }
 
   chrome.storage.local.set({ filterByStatusCode: filterEnabled }, () => {
-    // Обновляем фильтрацию на всех вкладках
     chrome.tabs.query({}, (tabs) => {
       tabs.forEach(tab => {
         if (tab.id) {
@@ -106,12 +102,9 @@ function toggleStatusCodeFilter() {
   });
 }
 
-// Сохранение выбранных статус-кодов
 function saveStatusCodeSettings() {
   const selectedCodes = getSelectedStatusCodes();
-
   chrome.storage.local.set({ selectedStatusCodes: selectedCodes }, () => {
-    // Обновляем фильтрацию на всех вкладках
     chrome.tabs.query({}, (tabs) => {
       tabs.forEach(tab => {
         if (tab.id) {
@@ -126,7 +119,6 @@ function saveStatusCodeSettings() {
   });
 }
 
-// Получение выбранных статус-кодов
 function getSelectedStatusCodes() {
   const selectedCodes = [];
   document.querySelectorAll('.status-code-checkbox:checked').forEach(checkbox => {
@@ -199,14 +191,12 @@ function updateDisplay(currentErrors, errorHistory) {
   document.getElementById("totalCount").textContent = currentErrors.length;
   document.getElementById("errorCount").textContent = consoleErrors;
   document.getElementById("networkCount").textContent = networkErrors;
-  document.getElementById("historyCount").textContent = errorHistory.length;
 }
 
 function resetStats() {
   document.getElementById("totalCount").textContent = "0";
   document.getElementById("errorCount").textContent = "0";
   document.getElementById("networkCount").textContent = "0";
-  document.getElementById("historyCount").textContent = "0";
 }
 
 function updateUIState(isEnabled) {
@@ -258,16 +248,13 @@ function testNetworkError() {
   });
 }
 
-// СОЗДАНИЕ СКРИНШОТА
 async function captureScreenshot() {
   try {
     const statusElement = document.getElementById('captureScreenshot');
     const originalText = statusElement.textContent;
-    statusElement.textContent = 'Создание скриншота...';
+    statusElement.textContent = 'Создание...';
     statusElement.disabled = true;
-    statusElement.style.background = '#cccccc';
 
-    // Получаем скриншот
     const screenshotDataUrl = await new Promise((resolve) => {
       chrome.tabs.captureVisibleTab(null, { format: 'jpeg', quality: 80 }, (dataUrl) => {
         resolve(dataUrl);
@@ -278,7 +265,6 @@ async function captureScreenshot() {
       throw new Error('Не удалось создать скриншот');
     }
 
-    // Получаем текущие ошибки из активной вкладки
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
     const results = await chrome.scripting.executeScript({
       target: { tabId: tab.id },
@@ -290,14 +276,12 @@ async function captureScreenshot() {
     const currentErrors = results && results[0] && results[0].result ? results[0].result : [];
 
     if (currentErrors.length > 0) {
-      // Получаю всю историю из storage
       const storageHistory = await new Promise(resolve => {
         chrome.storage.local.get(['errorHistory'], (result) => {
           resolve(result.errorHistory || []);
         });
       });
 
-      // Обновляем ошибки добавляя скриншот
       const errorIds = currentErrors.map(error => error.id);
       const updatedHistory = storageHistory.map(error => {
         if (errorIds.includes(error.id)) {
@@ -311,42 +295,32 @@ async function captureScreenshot() {
         return error;
       });
 
-      // Сохраняю обновленную историю
       await new Promise(resolve => {
         chrome.storage.local.set({ errorHistory: updatedHistory }, resolve);
       });
 
-      // Скачиваю скриншот
       await downloadScreenshot(screenshotDataUrl, `multiple-errors-${currentErrors.length}`);
-
-      statusElement.textContent = `Скриншот добавлен к ${currentErrors.length} ошибкам!`;
+      statusElement.textContent = `Скриншот +${currentErrors.length}`;
     } else {
-      // Если нет текущих ошибки, просто скачиваем скриншот
       await downloadScreenshot(screenshotDataUrl, 'manual');
-
-      statusElement.textContent = 'Скриншот создан! (нет текущих ошибок)';
+      statusElement.textContent = 'Скриншот создан!';
     }
 
     setTimeout(() => {
       statusElement.textContent = originalText;
       statusElement.disabled = false;
-      statusElement.style.background = '';
     }, 2000);
 
   } catch (error) {
     const statusElement = document.getElementById('captureScreenshot');
     statusElement.textContent = 'Ошибка!';
     setTimeout(() => {
-      statusElement.textContent = 'Сделать скриншот';
+      statusElement.textContent = '📸 Сделать скриншот';
       statusElement.disabled = false;
-      statusElement.style.background = '';
     }, 2000);
-
-    alert('Ошибка при создании скриншота: ' + error.message);
   }
 }
 
-// Функция скачивания скриншота
 function downloadScreenshot(dataUrl, prefix) {
   return new Promise((resolve) => {
     const link = document.createElement('a');

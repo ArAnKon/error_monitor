@@ -32,7 +32,7 @@ chrome.storage.local.get([
 function showNotification(errorData) {
   if (!extensionEnabled) return;
 
-  // Проверка фильтров по стату-кодам
+  // Проверяем фильтрацию по статус-кодам
   if (filterByStatusCode && errorData.type === "NETWORK_ERROR") {
     const statusCode = errorData.details?.statusCode?.toString() || "0";
     if (!selectedStatusCodes.includes(statusCode)) {
@@ -52,8 +52,26 @@ function showNotification(errorData) {
   }
 
   let title = errorData.type === "CONSOLE_ERROR" ? "Console Error" : "Network Error";
-  if (errorData.details?.statusCode > 0) {
-    title += ` (${errorData.details.statusCode})`;
+
+  // Индикатор статуса для сетевых ошибок
+  let statusIndicator = '';
+  if (errorData.type === "NETWORK_ERROR" && errorData.details?.statusCode) {
+    const statusCode = errorData.details.statusCode;
+    let statusClass = '';
+    let statusText = statusCode.toString();
+
+    if (statusCode >= 400 && statusCode < 500) {
+      statusClass = 'status-4xx';
+    } else if (statusCode >= 500) {
+      statusClass = 'status-5xx';
+    } else if (statusCode === 0) {
+      statusClass = 'status-error';
+      statusText = 'ERR';
+    }
+
+    if (statusClass) {
+      statusIndicator = `<span class="status-indicator ${statusClass}">${statusText}</span>`;
+    }
   }
 
   const isNetworkError = errorData.type === "NETWORK_ERROR";
@@ -66,15 +84,15 @@ function showNotification(errorData) {
 
   notification.innerHTML = `
         <h4>
-            ${title}
-            <button class="close-btn">×</button>
+            <span>${title}${statusIndicator}</span>
+            <button class="close-btn" title="Закрыть">×</button>
         </h4>
         <p class="error-text" title="${errorData.message}">${displayMessage}</p>
         <div class="timestamp">
             <span>${new Date().toLocaleTimeString()} • ${window.location.hostname}</span>
             <div class="notification-actions">
-                ${isNetworkError ? '<button class="copy-curl-btn">📋 cURL</button>' : ''}
-                <button class="details-btn">🔍 Детали</button>
+                ${isNetworkError ? '<button class="copy-curl-btn" title="Скопировать cURL">📋 cURL</button>' : ''}
+                <button class="details-btn" title="Показать детали">🔍 Детали</button>
             </div>
         </div>
     `;
@@ -115,10 +133,12 @@ function showNotification(errorData) {
 
 // Функция для открытия деталей ошибки в истории
 function openErrorDetails(errorData) {
+  // Сохраняем ID ошибки для открытия в истории
   chrome.storage.local.set({
     errorToShowInHistory: errorData.id,
     openHistoryOnLoad: true
   }, () => {
+    // Открываем окно истории
     chrome.runtime.sendMessage({
       type: "OPEN_HISTORY_WITH_ERROR",
       errorId: errorData.id
@@ -246,7 +266,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     filterByStatusCode = request.filterEnabled;
     selectedStatusCodes = request.selectedStatusCodes || [];
 
-    // Пересоздаем уведомления с учетом фильтрации
+    // Пересоздаем уведомления с учетом новой фильтрации
     notificationStack.forEach(notification => {
       if (notification.parentElement) {
         notification.remove();
