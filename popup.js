@@ -5,6 +5,7 @@ let extensionEnabled = true;
 document.addEventListener('DOMContentLoaded', () => {
   loadExtensionState();
   loadNotificationSettings();
+  loadStatusCodeSettings();
   setupEventListeners();
   updateStats();
 });
@@ -19,8 +20,14 @@ function setupEventListeners() {
   document.getElementById("exportHistory").addEventListener("click", exportHistory);
   document.getElementById("clearHistory").addEventListener("click", clearHistory);
 
-  // ДОБАВЛЕН ОБРАБОТЧИК ДЛЯ НАСТРОЙКИ ПОЛОЖЕНИЯ
+  // Обработчики для новых настроек
   document.getElementById("notificationPosition").addEventListener("change", saveNotificationSettings);
+  document.getElementById("filterByStatusCode").addEventListener("change", toggleStatusCodeFilter);
+
+  // Обработчики для чекбоксов статус-кодов
+  document.querySelectorAll('.status-code-checkbox').forEach(checkbox => {
+    checkbox.addEventListener('change', saveStatusCodeSettings);
+  });
 }
 
 function loadExtensionState() {
@@ -31,7 +38,7 @@ function loadExtensionState() {
   });
 }
 
-// ЗАГРУЗКА НАСТРОЕК ПОЛОЖЕНИЯ УВЕДОМЛЕНИЙ
+// Загрузка настроек положения уведомлений
 function loadNotificationSettings() {
   chrome.storage.local.get(["notificationPosition"], (result) => {
     const position = result.notificationPosition || "bottom-right";
@@ -39,7 +46,26 @@ function loadNotificationSettings() {
   });
 }
 
-// СОХРАНЕНИЕ НАСТРОЕК ПОЛОЖЕНИЯ УВЕДОМЛЕНИЙ
+// Загрузка настроек фильтрации по статус-кодам
+function loadStatusCodeSettings() {
+  chrome.storage.local.get(["filterByStatusCode", "selectedStatusCodes"], (result) => {
+    const filterEnabled = result.filterByStatusCode || false;
+    const selectedCodes = result.selectedStatusCodes || ["400", "404", "500", "0"];
+
+    document.getElementById("filterByStatusCode").checked = filterEnabled;
+
+    // Показываем/скрываем секцию с выбором статус-кодов
+    const statusCodesSection = document.getElementById("statusCodesSection");
+    statusCodesSection.style.display = filterEnabled ? "block" : "none";
+
+    // Устанавливаем выбранные статус-коды
+    document.querySelectorAll('.status-code-checkbox').forEach(checkbox => {
+      checkbox.checked = selectedCodes.includes(checkbox.value);
+    });
+  });
+}
+
+// Сохранение настроек положения уведомлений
 function saveNotificationSettings() {
   const position = document.getElementById("notificationPosition").value;
   chrome.storage.local.set({ notificationPosition: position }, () => {
@@ -55,6 +81,58 @@ function saveNotificationSettings() {
       });
     });
   });
+}
+
+// Включение/выключение фильтрации по статус-кодам
+function toggleStatusCodeFilter() {
+  const filterEnabled = document.getElementById("filterByStatusCode").checked;
+  const statusCodesSection = document.getElementById("statusCodesSection");
+
+  statusCodesSection.style.display = filterEnabled ? "block" : "none";
+
+  chrome.storage.local.set({ filterByStatusCode: filterEnabled }, () => {
+    // Обновляем фильтрацию на всех вкладках
+    chrome.tabs.query({}, (tabs) => {
+      tabs.forEach(tab => {
+        if (tab.id) {
+          chrome.tabs.sendMessage(tab.id, {
+            type: "STATUS_CODE_FILTER_UPDATE",
+            filterEnabled: filterEnabled,
+            selectedStatusCodes: getSelectedStatusCodes()
+          }).catch(() => {});
+        }
+      });
+    });
+  });
+}
+
+// Сохранение выбранных статус-кодов
+function saveStatusCodeSettings() {
+  const selectedCodes = getSelectedStatusCodes();
+
+  chrome.storage.local.set({ selectedStatusCodes: selectedCodes }, () => {
+    // Обновляем фильтрацию на всех вкладках
+    chrome.tabs.query({}, (tabs) => {
+      tabs.forEach(tab => {
+        if (tab.id) {
+          chrome.tabs.sendMessage(tab.id, {
+            type: "STATUS_CODE_FILTER_UPDATE",
+            filterEnabled: document.getElementById("filterByStatusCode").checked,
+            selectedStatusCodes: selectedCodes
+          }).catch(() => {});
+        }
+      });
+    });
+  });
+}
+
+// Получение выбранных статус-кодов
+function getSelectedStatusCodes() {
+  const selectedCodes = [];
+  document.querySelectorAll('.status-code-checkbox:checked').forEach(checkbox => {
+    selectedCodes.push(checkbox.value);
+  });
+  return selectedCodes;
 }
 
 function toggleExtension(e) {
@@ -243,7 +321,7 @@ async function captureScreenshot() {
 
       statusElement.textContent = `Скриншот добавлен к ${currentErrors.length} ошибкам!`;
     } else {
-      // Если нет текущих ошибок, просто скачиваем скриншот
+      // Если нет текущих ошибки, просто скачиваем скриншот
       await downloadScreenshot(screenshotDataUrl, 'manual');
 
       statusElement.textContent = 'Скриншот создан! (нет текущих ошибок)';

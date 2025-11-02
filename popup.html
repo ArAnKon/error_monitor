@@ -31,6 +31,7 @@
   </div>
 </div>
 
+<!-- НАСТРОЙКИ -->
 <div class="settings-section">
   <div class="setting-item">
     <label for="notificationPosition">Положение уведомлений:</label>
@@ -38,6 +39,56 @@
       <option value="bottom-right">Справа снизу</option>
       <option value="top-right">Справа сверху</option>
     </select>
+  </div>
+
+  <!-- ДОБАВЛЕНА НАСТРОЙКА ФИЛЬТРАЦИИ ПО СТАТУС-КОДАМ -->
+  <div class="setting-item">
+    <label class="checkbox-label">
+      <input type="checkbox" id="filterByStatusCode">
+      <span class="checkbox-custom"></span>
+      Показывать только ошибки с выбранными статус-кодами
+    </label>
+  </div>
+
+  <div class="setting-item" id="statusCodesSection" style="display: none;">
+    <label>Выберите статус-коды для показа:</label>
+    <div class="status-codes-grid">
+      <label class="checkbox-label small">
+        <input type="checkbox" value="400" class="status-code-checkbox">
+        <span class="checkbox-custom"></span>
+        400
+      </label>
+      <label class="checkbox-label small">
+        <input type="checkbox" value="401" class="status-code-checkbox">
+        <span class="checkbox-custom"></span>
+        401
+      </label>
+      <label class="checkbox-label small">
+        <input type="checkbox" value="403" class="status-code-checkbox">
+        <span class="checkbox-custom"></span>
+        403
+      </label>
+      <label class="checkbox-label small">
+        <input type="checkbox" value="404" class="status-code-checkbox">
+        <span class="checkbox-custom"></span>
+        404
+      </label>
+      <label class="checkbox-label small">
+        <input type="checkbox" value="500" class="status-code-checkbox">
+        <span class="checkbox-custom"></span>
+        500
+      </label>
+      <label class="checkbox-label small">
+        <input type="checkbox" value="502" class="status-code-checkbox">
+        <span class="checkbox-custom"></span>
+        502
+      </label>
+      <label class="checkbox-label small">
+        <input type="checkbox" value="503" class="status-code-checkbox">
+        <span class="checkbox-custom"></span>
+        503
+      </label>
+    </div>
   </div>
 </div>
 
