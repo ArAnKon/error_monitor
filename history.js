@@ -73,7 +73,6 @@ function matchesTimeFilter(error, timeFilter) {
 }
 
 // Применение фильтров
-// Применение фильтров
 function applyFilters() {
     const typeFilter = document.getElementById('typeFilter').value;
     const timeFilter = document.getElementById('timeFilter').value;

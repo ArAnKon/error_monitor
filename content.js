@@ -23,17 +23,24 @@ function showNotification(errorData) {
 
   const isNetworkError = errorData.type === "NETWORK_ERROR";
 
+  const maxMessageLength = 150;
+  let displayMessage = errorData.message;
+  if (displayMessage.length > maxMessageLength) {
+    displayMessage = displayMessage.substring(0, maxMessageLength) + '...';
+  }
+
   notification.innerHTML = `
         <h4>
             ${title}
             <button class="close-btn">×</button>
         </h4>
-        <p class="error-text">${errorData.message}</p>
+        <p class="error-text" title="${errorData.message}">${displayMessage}</p>
         <div class="timestamp">
             <span>${new Date().toLocaleTimeString()} • ${window.location.hostname}</span>
-            ${isNetworkError ? '<span class="copy-hint">Click to copy curl</span>' : ""}
+            ${isNetworkError ? '<span class="copy-hint">Click to copy curl (bash)</span>' : ""}
         </div>
     `;
+
 
   const closeBtn = notification.querySelector('.close-btn');
   closeBtn.addEventListener('click', (e) => {
@@ -104,21 +111,50 @@ function generateId() {
   return Date.now().toString(36) + Math.random().toString(36).substr(2);
 }
 
+// ФУНКЦИЯ copyCurl - КОПИРУЕТ CURL КОМАНДУ ДЛЯ BASH
 function copyCurl(errorData) {
   if (!errorData.details || !errorData.details.url) return;
 
-  const curl = `curl -X ${errorData.details.method || "GET"} "${errorData.details.url}" -H "Origin: ${window.location.origin}"`;
+  const curlCommand = generateCurlCommand(errorData);
 
   if (navigator.clipboard) {
-    navigator.clipboard.writeText(curl);
+    navigator.clipboard.writeText(curlCommand).then(() => {
+      console.log('cURL команда скопирована в буфер обмена');
+    }).catch(err => {
+      console.error('Ошибка копирования cURL:', err);
+    });
   } else {
+    // Fallback для старых браузеров
     const textArea = document.createElement("textarea");
-    textArea.value = curl;
+    textArea.value = curlCommand;
+    textArea.style.position = 'fixed';
+    textArea.style.left = '-999999px';
+    textArea.style.top = '-999999px';
     document.body.appendChild(textArea);
+    textArea.focus();
     textArea.select();
-    document.execCommand('copy');
-    document.body.removeChild(textArea);
+
+    try {
+      document.execCommand('copy');
+      console.log('cURL команда скопирована в буфер обмена (fallback)');
+    } catch (err) {
+      console.error('Ошибка копирования cURL (fallback):', err);
+    } finally {
+      document.body.removeChild(textArea);
+    }
   }
+}
+
+// ФУНКЦИЯ ГЕНЕРАЦИИ CURL КОМАНДЫ ДЛЯ BASH
+function generateCurlCommand(error) {
+  if (!error.details || !error.details.url) return '# cURL не доступен для этой ошибки';
+
+  const url = error.details.url;
+  const method = error.details.method || 'GET';
+  const origin = error.tabUrl ? new URL(error.tabUrl).origin : window.location.origin;
+
+  // Генерация полной cURL команды как в истории
+  return `curl -X ${method} "${url}" \\\n  -H "Accept: */*" \\\n  -H "Origin: ${origin}" \\\n  -H "Referer: ${error.tabUrl || window.location.href}" \\\n  --compressed \\\n  --insecure`;
 }
 
 function handleError(errorData) {
