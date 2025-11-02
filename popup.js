@@ -4,6 +4,7 @@ let extensionEnabled = true;
 
 document.addEventListener('DOMContentLoaded', () => {
   loadExtensionState();
+  loadNotificationSettings();
   setupEventListeners();
   updateStats();
 });
@@ -17,6 +18,9 @@ function setupEventListeners() {
   document.getElementById("showHistory").addEventListener("click", showHistory);
   document.getElementById("exportHistory").addEventListener("click", exportHistory);
   document.getElementById("clearHistory").addEventListener("click", clearHistory);
+
+  // ДОБАВЛЕН ОБРАБОТЧИК ДЛЯ НАСТРОЙКИ ПОЛОЖЕНИЯ
+  document.getElementById("notificationPosition").addEventListener("change", saveNotificationSettings);
 }
 
 function loadExtensionState() {
@@ -24,6 +28,32 @@ function loadExtensionState() {
     extensionEnabled = result.extensionEnabled !== false;
     document.getElementById("toggleExtension").checked = extensionEnabled;
     updateUIState(extensionEnabled);
+  });
+}
+
+// ЗАГРУЗКА НАСТРОЕК ПОЛОЖЕНИЯ УВЕДОМЛЕНИЙ
+function loadNotificationSettings() {
+  chrome.storage.local.get(["notificationPosition"], (result) => {
+    const position = result.notificationPosition || "bottom-right";
+    document.getElementById("notificationPosition").value = position;
+  });
+}
+
+// СОХРАНЕНИЕ НАСТРОЕК ПОЛОЖЕНИЯ УВЕДОМЛЕНИЙ
+function saveNotificationSettings() {
+  const position = document.getElementById("notificationPosition").value;
+  chrome.storage.local.set({ notificationPosition: position }, () => {
+    // Обновляем положение уведомлений на всех вкладках
+    chrome.tabs.query({}, (tabs) => {
+      tabs.forEach(tab => {
+        if (tab.id) {
+          chrome.tabs.sendMessage(tab.id, {
+            type: "NOTIFICATION_POSITION_UPDATE",
+            position: position
+          }).catch(() => {});
+        }
+      });
+    });
   });
 }
 

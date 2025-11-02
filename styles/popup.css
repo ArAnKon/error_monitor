@@ -63,6 +63,42 @@ h3 {
     color: #7b1fa2;
 }
 
+/* ДОБАВЛЕНЫ СТИЛИ ДЛЯ НАСТРОЕК */
+.settings-section {
+    background: #f8f9fa;
+    padding: 12px;
+    border-radius: 8px;
+    margin-bottom: 15px;
+    border: 1px solid #e9ecef;
+}
+
+.setting-item {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.setting-item label {
+    font-size: 13px;
+    font-weight: 500;
+    color: #495057;
+}
+
+.setting-item select {
+    padding: 8px 10px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 13px;
+    background: white;
+    cursor: pointer;
+}
+
+.setting-item select:focus {
+    outline: none;
+    border-color: #1e90ff;
+    box-shadow: 0 0 0 2px rgba(30, 144, 255, 0.2);
+}
+
 .buttons {
     display: grid;
     grid-template-columns: 1fr 1fr;
