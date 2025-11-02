@@ -2,35 +2,60 @@
 
 Расширение для Google Chrome, позволяющее перехватывать ошибки без открытия DevTools. Все наглядно отображается в pop-up уведомлениях. Это удобный инструмент для тестировщиков программного обеспечения, аналитиков и специалистов технической поддержки, если по каким-то причинам они не могут открыть DevTools 😄
 
-![Image alt](https://github.com/ArAnKon/error_monitor/blob/main/demonstration/menu.png)
+<p align="center">
+  <img src="https://github.com/ArAnKon/error_monitor/blob/main/demonstration/menu.png"/>
+</p>
 
 ## 🚀 Возможности
 
 - Перехват JavaScript ошибок
 - Перехват Network ошибок
 - Перехват Console ошибок
-  
-![Image alt](https://github.com/ArAnKon/error_monitor/blob/main/demonstration/notifications.png)
-
 - Общая история ошибок в отдельном окне
-
-![Image alt](https://github.com/ArAnKon/error_monitor/blob/2235acc7ceee96534b86393e7210cadbf2e252b8/demonstration/history.png)
-
+- Фильтрация по статус-кодам ошибок
 - Детализация ошибки с скриншотом и без
-
-![Image alt](https://github.com/ArAnKon/error_monitor/blob/2235acc7ceee96534b86393e7210cadbf2e252b8/demonstration/details_error_screen.png)
-![Image alt](https://github.com/ArAnKon/error_monitor/blob/2235acc7ceee96534b86393e7210cadbf2e252b8/demonstration/details_eror_no_screen.png)
-
 - Сохранение/очистка истории ошибок
 - Копирование cURL из pop-up уведомления
-  
-![Image alt](https://github.com/ArAnKon/error_monitor/blob/2235acc7ceee96534b86393e7210cadbf2e252b8/demonstration/copy_curl.png)
-
 - Создание скриншота и его автоматическое скачивание
 - Экспорт истории ошибок в JSON формате
 
+<p align="center">
+  <img src="https://github.com/ArAnKon/error_monitor/blob/main/demonstration/notifications.png"/>
+</p>
 
+<p align="center">
+  <img src="https://github.com/ArAnKon/error_monitor/blob/2235acc7ceee96534b86393e7210cadbf2e252b8/demonstration/history.png"/>
+</p>
+
+<p align="center">
+  <img src="https://github.com/ArAnKon/error_monitor/blob/d87de364be684f426df816d8e4b657f390da9dec/demonstration/filter_in_popup.png"/>
+</p>
+
+<p align="center">
+  <img src="https://github.com/ArAnKon/error_monitor/blob/d87de364be684f426df816d8e4b657f390da9dec/demonstration/details_error_screen_1.png"/>
+</p>
+
+<p align="center">
+  <img src="https://github.com/ArAnKon/error_monitor/blob/d87de364be684f426df816d8e4b657f390da9dec/demonstration/details_error_screen_2.png"/>
+</p>
+
+<p align="center">
+  <img src="https://github.com/ArAnKon/error_monitor/blob/d87de364be684f426df816d8e4b657f390da9dec/demonstration/details_error_no_screen.png"/>
+</p>
+
+<p align="center">
+  <img src="https://github.com/ArAnKon/error_monitor/blob/d87de364be684f426df816d8e4b657f390da9dec/demonstration/copy_curl.png"/>
+</p>
 
 ## 📦 Установка
 
 На данный момент Вы можете установить данное расширение форкнув репозиторий, и установить, как обычное расширение в GoogleChrome в режиме разработчика. 
+
+💻 Инструкция: 
+
+- Откройте страницу расширений: Введите в адресную строку браузера chrome://extensions/ и нажмите Enter
+- Включите режим разработчика: Найдите переключатель "Режим разработчика" в правом верхнем углу страницы и активируйте его
+- Скачайте архив с данным расширением себе на устройство и распакуйте его в удобную для Вас папку
+- Загрузите расширение: Нажмите кнопку "Загрузить распакованное расширение"
+- Выберите папку: Найдите и выберите папку на своем компьютере, в которой хранятся файлы расширения
+- Проверьте установку: После успешной загрузки расширение появится в списке на этой странице, а его значок появится в верхней правой части окна браузера. 
