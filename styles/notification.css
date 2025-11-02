@@ -2,6 +2,8 @@
   position: fixed;
   right: 20px;
   max-width: 400px;
+  max-height: 200px;
+  overflow: hidden;
   background: #ffebee;
   border: 2px solid #f44336;
   border-radius: 8px;
@@ -34,6 +36,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-shrink: 0;
 }
 
 .network-notification h4 {
@@ -43,9 +46,16 @@
 .error-notification .error-text {
   margin: 0;
   font-size: 12px;
+  text-overflow: ellipsis;
+  overflow: hidden;
   line-height: 1.4;
   word-break: break-word;
   color: red;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  flex-grow: 1;
 }
 
 .error-notification .timestamp {
@@ -55,6 +65,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-shrink: 0;
 }
 
 .error-notification .close-btn {

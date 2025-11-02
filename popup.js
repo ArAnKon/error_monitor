@@ -157,8 +157,9 @@ async function captureScreenshot() {
     const originalText = statusElement.textContent;
     statusElement.textContent = 'Создание скриншота...';
     statusElement.disabled = true;
-    statusElement.style.background = '#cccccc'; // Серый цвет при загрузке
+    statusElement.style.background = '#cccccc';
 
+    // Получаем скриншот
     const screenshotDataUrl = await new Promise((resolve) => {
       chrome.tabs.captureVisibleTab(null, { format: 'jpeg', quality: 80 }, (dataUrl) => {
         resolve(dataUrl);
@@ -169,28 +170,29 @@ async function captureScreenshot() {
       throw new Error('Не удалось создать скриншот');
     }
 
-
+    // Получаем текущие ошибки из активной вкладки
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
     const results = await chrome.scripting.executeScript({
       target: { tabId: tab.id },
       func: () => {
-        const errors = window.errorMonitor ? window.errorMonitor.getErrorHistory() : [];
-        return errors.length > 0 ? errors[errors.length - 1] : null;
+        return window.errorMonitor ? window.errorMonitor.getCurrentErrors() : [];
       }
     });
 
-    const lastError = results && results[0] && results[0].result ? results[0].result : null;
+    const currentErrors = results && results[0] && results[0].result ? results[0].result : [];
 
-    if (lastError) {
-
+    if (currentErrors.length > 0) {
+      // Получаем всю историю из storage
       const storageHistory = await new Promise(resolve => {
         chrome.storage.local.get(['errorHistory'], (result) => {
           resolve(result.errorHistory || []);
         });
       });
 
+      // Обновляем все текущие ошибки в истории, добавляя скриншот
+      const errorIds = currentErrors.map(error => error.id);
       const updatedHistory = storageHistory.map(error => {
-        if (error.id === lastError.id) {
+        if (errorIds.includes(error.id)) {
           return {
             ...error,
             screenshot: screenshotDataUrl,
@@ -201,29 +203,27 @@ async function captureScreenshot() {
         return error;
       });
 
+      // Сохраняем обновленную историю
       await new Promise(resolve => {
         chrome.storage.local.set({ errorHistory: updatedHistory }, resolve);
       });
 
-      // Скачивание скриншота
-      await downloadScreenshot(screenshotDataUrl, lastError.id);
+      // Скачиваем скриншот
+      await downloadScreenshot(screenshotDataUrl, `multiple-errors-${currentErrors.length}`);
 
-      statusElement.textContent = 'Скриншот создан!';
-      setTimeout(() => {
-        statusElement.textContent = originalText;
-        statusElement.disabled = false;
-      }, 2000);
-
+      statusElement.textContent = `Скриншот добавлен к ${currentErrors.length} ошибкам!`;
     } else {
-      // Если нет ошибок в истории, просто скачиваем скриншот
+      // Если нет текущих ошибок, просто скачиваем скриншот
       await downloadScreenshot(screenshotDataUrl, 'manual');
 
-      statusElement.textContent = 'Скриншот создан!';
-      setTimeout(() => {
-        statusElement.textContent = originalText;
-        statusElement.disabled = false;
-      }, 2000);
+      statusElement.textContent = 'Скриншот создан! (нет текущих ошибок)';
     }
+
+    setTimeout(() => {
+      statusElement.textContent = originalText;
+      statusElement.disabled = false;
+      statusElement.style.background = '';
+    }, 2000);
 
   } catch (error) {
     const statusElement = document.getElementById('captureScreenshot');
@@ -231,6 +231,7 @@ async function captureScreenshot() {
     setTimeout(() => {
       statusElement.textContent = 'Сделать скриншот';
       statusElement.disabled = false;
+      statusElement.style.background = '';
     }, 2000);
 
     alert('Ошибка при создании скриншота: ' + error.message);
@@ -238,12 +239,12 @@ async function captureScreenshot() {
 }
 
 // Функция скачивания скриншота
-function downloadScreenshot(dataUrl, errorId) {
+function downloadScreenshot(dataUrl, prefix) {
   return new Promise((resolve) => {
     const link = document.createElement('a');
     link.href = dataUrl;
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-    link.download = `screenshot-error-${errorId}-${timestamp}.jpg`;
+    link.download = `screenshot-${prefix}-${timestamp}.jpg`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);

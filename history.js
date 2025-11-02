@@ -29,6 +29,7 @@ function setupEventListeners() {
     });
 
     document.getElementById('typeFilter').addEventListener('change', applyFilters);
+    document.getElementById('statusFilter').addEventListener('change', applyFilters);
     document.getElementById('timeFilter').addEventListener('change', applyFilters);
     document.getElementById('searchInput').addEventListener('input', applyFilters);
 
@@ -45,11 +46,16 @@ function matchesTimeFilter(error, timeFilter) {
     const errorTime = new Date(error.timestamp);
     const now = new Date();
 
+    if (isNaN(errorTime.getTime())) {
+        return false;
+    }
+
     switch (timeFilter) {
         case 'today': {
-            const errorDate = new Date(errorTime.getFullYear(), errorTime.getMonth(), errorTime.getDate());
-            const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-            return errorDate.getTime() === today.getTime();
+            const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            const todayEnd = new Date(todayStart);
+            todayEnd.setDate(todayEnd.getDate() + 1);
+            return errorTime >= todayStart && errorTime < todayEnd;
         }
         case 'week': {
             const weekAgo = new Date(now);
@@ -70,9 +76,8 @@ function matchesTimeFilter(error, timeFilter) {
 function applyFilters() {
     const typeFilter = document.getElementById('typeFilter').value;
     const timeFilter = document.getElementById('timeFilter').value;
+    const statusFilter = document.getElementById('statusFilter').value;
     const searchText = document.getElementById('searchInput').value.toLowerCase();
-
-    console.log('Applying filters:', { typeFilter, timeFilter, searchText });
 
     filteredHistory = allHistory.filter(error => {
         // Фильтр по типу
@@ -85,6 +90,23 @@ function applyFilters() {
             return false;
         }
 
+        // Фильтр по статус коду (только для сетевых ошибок)
+        if (statusFilter !== 'all' && error.type === 'NETWORK_ERROR') {
+            const statusCode = error.details?.statusCode;
+
+            switch (statusFilter) {
+                case '4xx':
+                    if (!statusCode || statusCode < 400 || statusCode >= 500) return false;
+                    break;
+                case '5xx':
+                    if (!statusCode || statusCode < 500) return false;
+                    break;
+                case 'network-error':
+                    if (statusCode !== 0) return false;
+                    break;
+            }
+        }
+
         // Поиск по сообщению
         if (searchText && !error.message.toLowerCase().includes(searchText)) {
             return false;
@@ -93,7 +115,6 @@ function applyFilters() {
         return true;
     });
 
-    console.log('Filtered history count:', filteredHistory.length);
     renderHistory();
     updateStats();
 }
@@ -102,7 +123,10 @@ function applyFilters() {
 function groupErrorsByDay(errors) {
     const groups = {};
 
-    errors.forEach(error => {
+    // СОРТИРУЕМ ОШИБКИ ПО УБЫВАНИЮ ДАТЫ (НОВЫЕ СВЕРХУ)
+    const sortedErrors = [...errors].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+    sortedErrors.forEach(error => {
         const date = new Date(error.timestamp);
         const dateKey = date.toDateString();
 
@@ -118,21 +142,30 @@ function groupErrorsByDay(errors) {
 
 // Форматирование даты для отображения
 function formatDateDisplay(dateString) {
-    const date = new Date(dateString);
-    const today = new Date();
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
+    try {
+        const date = new Date(dateString);
+        if (isNaN(date.getTime())) {
+            return 'Неизвестная дата';
+        }
 
-    if (date.toDateString() === today.toDateString()) {
-        return 'Сегодня';
-    } else if (date.toDateString() === yesterday.toDateString()) {
-        return 'Вчера';
-    } else {
-        return date.toLocaleDateString('ru-RU', {
-            day: 'numeric',
-            month: 'long',
-            year: 'numeric'
-        });
+        const today = new Date();
+        const yesterday = new Date(today);
+        yesterday.setDate(yesterday.getDate() - 1);
+
+        if (date.toDateString() === today.toDateString()) {
+            return 'Сегодня';
+        } else if (date.toDateString() === yesterday.toDateString()) {
+            return 'Вчера';
+        } else {
+            return date.toLocaleDateString('ru-RU', {
+                day: 'numeric',
+                month: 'long',
+                year: 'numeric'
+            });
+        }
+    } catch (error) {
+        console.error('Error formatting date:', error, dateString);
+        return 'Неизвестная дата';
     }
 }
 
@@ -398,24 +431,59 @@ function showSuccessMessage(message) {
 
 // Вспомогательные функции
 function formatTime(timestamp) {
-    const date = new Date(timestamp);
-    return date.toLocaleTimeString('ru-RU', {
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit'
-    });
+    try {
+        // Если timestamp уже является объектом Date
+        if (timestamp instanceof Date) {
+            return timestamp.toLocaleTimeString('ru-RU', {
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        // Если это ISO строка или число
+        const date = new Date(timestamp);
+        if (!isNaN(date.getTime())) {
+            return date.toLocaleTimeString('ru-RU', {
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        return '--:--';
+    } catch (error) {
+        return '--:--';
+    }
 }
 
 function formatDetailedTime(timestamp) {
-    const date = new Date(timestamp);
-    return date.toLocaleString('ru-RU', {
-        day: 'numeric',
-        month: 'long',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit'
-    });
+    try {
+        // Если timestamp уже является объектом Date
+        if (timestamp instanceof Date) {
+            return timestamp.toLocaleString('ru-RU', {
+                day: 'numeric',
+                month: 'long',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        // Если это ISO строка или число
+        const date = new Date(timestamp);
+        if (!isNaN(date.getTime())) {
+            return date.toLocaleString('ru-RU', {
+                day: 'numeric',
+                month: 'long',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        return 'Неизвестно';
+    } catch (error) {
+        return 'Неизвестно';
+    }
 }
 
 function truncateText(text, maxLength) {
