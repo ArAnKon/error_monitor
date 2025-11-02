@@ -9,13 +9,24 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // Загрузка истории из chrome.storage
 function loadHistory() {
-    chrome.storage.local.get(["errorHistory"], (result) => {
+    chrome.storage.local.get(["errorHistory", "errorToShowInHistory", "openHistoryOnLoad"], (result) => {
         if (result.errorHistory) {
-            // СОРТИРУЕМ ПО УБЫВАНИЮ ДАТЫ (НОВЫЕ СВЕРХУ)
             allHistory = result.errorHistory.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
             filteredHistory = [...allHistory];
             renderHistory();
             updateStats();
+
+            // Автоматически открываем детали ошибки если нужно
+            if (result.openHistoryOnLoad && result.errorToShowInHistory) {
+                const errorToShow = allHistory.find(error => error.id === result.errorToShowInHistory);
+                if (errorToShow) {
+                    setTimeout(() => {
+                        showErrorDetail(errorToShow);
+                        // Очищаем флаги после открытия
+                        chrome.storage.local.remove(['errorToShowInHistory', 'openHistoryOnLoad']);
+                    }, 500);
+                }
+            }
         } else {
             showEmptyState();
         }
@@ -123,7 +134,7 @@ function applyFilters() {
 function groupErrorsByDay(errors) {
     const groups = {};
 
-    // СОРТИРУЕМ ОШИБКИ ПО УБЫВАНИЮ ДАТЫ (НОВЫЕ СВЕРХУ)
+
     const sortedErrors = [...errors].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
 
     sortedErrors.forEach(error => {

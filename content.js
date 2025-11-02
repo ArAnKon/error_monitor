@@ -32,7 +32,7 @@ chrome.storage.local.get([
 function showNotification(errorData) {
   if (!extensionEnabled) return;
 
-  // Проверяем фильтрацию по статус-кодам
+  // Проверка фильтров по стату-кодам
   if (filterByStatusCode && errorData.type === "NETWORK_ERROR") {
     const statusCode = errorData.details?.statusCode?.toString() || "0";
     if (!selectedStatusCodes.includes(statusCode)) {
@@ -72,7 +72,10 @@ function showNotification(errorData) {
         <p class="error-text" title="${errorData.message}">${displayMessage}</p>
         <div class="timestamp">
             <span>${new Date().toLocaleTimeString()} • ${window.location.hostname}</span>
-            ${isNetworkError ? '<span class="copy-hint">Click to copy curl (bash)</span>' : ""}
+            <div class="notification-actions">
+                ${isNetworkError ? '<button class="copy-curl-btn">📋 cURL</button>' : ''}
+                <button class="details-btn">🔍 Детали</button>
+            </div>
         </div>
     `;
 
@@ -82,13 +85,22 @@ function showNotification(errorData) {
     removeNotification(notification);
   });
 
+  // Обработчик для кнопки деталей
+  const detailsBtn = notification.querySelector('.details-btn');
+  detailsBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    openErrorDetails(errorData);
+    removeNotification(notification);
+  });
+
+  // Обработчик для кнопки cURL (только для сетевых ошибок)
   if (isNetworkError) {
-    notification.addEventListener("click", (e) => {
-      if (!e.target.classList.contains("close-btn")) {
-        copyCurl(errorData);
-        notification.classList.add("copy-success");
-        setTimeout(() => notification.classList.remove("copy-success"), 2000);
-      }
+    const copyCurlBtn = notification.querySelector('.copy-curl-btn');
+    copyCurlBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      copyCurl(errorData);
+      notification.classList.add("copy-success");
+      setTimeout(() => notification.classList.remove("copy-success"), 2000);
     });
   }
 
@@ -99,6 +111,19 @@ function showNotification(errorData) {
   setTimeout(() => {
     removeNotification(notification);
   }, 10000);
+}
+
+// Функция для открытия деталей ошибки в истории
+function openErrorDetails(errorData) {
+  chrome.storage.local.set({
+    errorToShowInHistory: errorData.id,
+    openHistoryOnLoad: true
+  }, () => {
+    chrome.runtime.sendMessage({
+      type: "OPEN_HISTORY_WITH_ERROR",
+      errorId: errorData.id
+    });
+  });
 }
 
 function updateNotificationPositions() {
@@ -189,7 +214,7 @@ function handleError(errorData) {
 }
 
 // Обработчик сообщений от расширения
-chrome.runtime.onMessage.addListener((request) => {
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.type === "EXTENSION_TOGGLE") {
     extensionEnabled = request.enabled;
     if (!extensionEnabled) {
@@ -221,7 +246,7 @@ chrome.runtime.onMessage.addListener((request) => {
     filterByStatusCode = request.filterEnabled;
     selectedStatusCodes = request.selectedStatusCodes || [];
 
-    // Пересоздаем уведомления с учетом новой фильтрации
+    // Пересоздаем уведомления с учетом фильтрации
     notificationStack.forEach(notification => {
       if (notification.parentElement) {
         notification.remove();

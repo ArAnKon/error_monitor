@@ -1,5 +1,5 @@
 body {
-    width: 420px; /* Увеличили ширину для новых настроек */
+    width: 420px;
     padding: 15px;
     font-family: Arial, sans-serif;
     background: #ffffff;
@@ -63,7 +63,7 @@ h3 {
     color: #7b1fa2;
 }
 
-/* СТИЛИ ДЛЯ НАСТРОЕК */
+
 .settings-section {
     background: #f8f9fa;
     padding: 12px;
@@ -104,7 +104,7 @@ h3 {
     box-shadow: 0 0 0 2px rgba(30, 144, 255, 0.2);
 }
 
-/* СТИЛИ ДЛЯ КАСТОМНЫХ ЧЕКБОКСОВ */
+
 .checkbox-label {
     display: flex;
     align-items: center;
@@ -153,7 +153,7 @@ h3 {
     border-color: #1e90ff;
 }
 
-/* СЕТКА ДЛЯ СТАТУС-КОДОВ */
+
 .status-codes-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -182,7 +182,7 @@ button:hover {
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
-/* КНОПКИ НА ВСЮ ШИРИНУ */
+
 .full-width {
     grid-column: span 2;
 }
@@ -238,7 +238,6 @@ button:hover {
     text-align: center;
 }
 
-/* Стили для переключателя */
 .switch {
     position: relative;
     display: inline-block;
@@ -290,7 +289,7 @@ input:checked + .slider:before {
     border-radius: 50%;
 }
 
-/* Стили для отключенного состояния */
+
 body.disabled .stats,
 body.disabled .buttons button:not(#toggleExtension) {
     opacity: 0.6;

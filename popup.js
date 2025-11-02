@@ -54,7 +54,7 @@ function loadStatusCodeSettings() {
 
     document.getElementById("filterByStatusCode").checked = filterEnabled;
 
-    // Показываем/скрываем секцию с выбором статус-кодов
+    // Показать/скрыть секцию с выбором статус-кодов
     const statusCodesSection = document.getElementById("statusCodesSection");
     statusCodesSection.style.display = filterEnabled ? "block" : "none";
 
@@ -290,14 +290,14 @@ async function captureScreenshot() {
     const currentErrors = results && results[0] && results[0].result ? results[0].result : [];
 
     if (currentErrors.length > 0) {
-      // Получаем всю историю из storage
+      // Получаю всю историю из storage
       const storageHistory = await new Promise(resolve => {
         chrome.storage.local.get(['errorHistory'], (result) => {
           resolve(result.errorHistory || []);
         });
       });
 
-      // Обновляем все текущие ошибки в истории, добавляя скриншот
+      // Обновляем ошибки добавляя скриншот
       const errorIds = currentErrors.map(error => error.id);
       const updatedHistory = storageHistory.map(error => {
         if (errorIds.includes(error.id)) {
@@ -311,12 +311,12 @@ async function captureScreenshot() {
         return error;
       });
 
-      // Сохраняем обновленную историю
+      // Сохраняю обновленную историю
       await new Promise(resolve => {
         chrome.storage.local.set({ errorHistory: updatedHistory }, resolve);
       });
 
-      // Скачиваем скриншот
+      // Скачиваю скриншот
       await downloadScreenshot(screenshotDataUrl, `multiple-errors-${currentErrors.length}`);
 
       statusElement.textContent = `Скриншот добавлен к ${currentErrors.length} ошибкам!`;
