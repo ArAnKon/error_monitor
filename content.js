@@ -4,9 +4,8 @@ let extensionEnabled = true;
 let notificationStack = [];
 let notificationPosition = "bottom-right";
 let filterByStatusCode = false;
-let selectedStatusCodes = ["400", "404", "500", "0"];
+let selectedStatusCodes = [];
 
-// Загрузка настроек при инициализации
 chrome.storage.local.get([
   "extensionEnabled",
   "errorHistory",
@@ -32,11 +31,19 @@ chrome.storage.local.get([
 function showNotification(errorData) {
   if (!extensionEnabled) return;
 
-  // Проверяем фильтрацию по статус-кодам
+  // Проверка фильтрации по статус-кодам
   if (filterByStatusCode && errorData.type === "NETWORK_ERROR") {
     const statusCode = errorData.details?.statusCode?.toString() || "0";
+
+    // Если фильтр включен и статус-код не выбран - НЕ показываем уведомление
     if (!selectedStatusCodes.includes(statusCode)) {
-      return; // Не показываем уведомление, если статус-код не выбран
+      return;
+    }
+
+    // Дополнительная проверка: если у ошибки нет статус-кода (undefined)
+    // и "0" не выбран - не показываем
+    if (errorData.details?.statusCode === undefined && !selectedStatusCodes.includes("0")) {
+      return;
     }
   }
 
@@ -266,7 +273,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     filterByStatusCode = request.filterEnabled;
     selectedStatusCodes = request.selectedStatusCodes || [];
 
-    // Пересоздаем уведомления с учетом новой фильтрации
+    // Пересоздаем уведомления с учетом фильтрации
     notificationStack.forEach(notification => {
       if (notification.parentElement) {
         notification.remove();
@@ -280,17 +287,22 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         showNotification(error); // Console errors всегда показываем
       } else if (error.type === "NETWORK_ERROR") {
         if (!filterByStatusCode) {
-          showNotification(error); // Если фильтр выключен, показываем все
+          showNotification(error); // Если фильтр выключен, показываем все Network ошибки
         } else {
           const statusCode = error.details?.statusCode?.toString() || "0";
-          if (selectedStatusCodes.includes(statusCode)) {
-            showNotification(error); // Показываем только выбранные статус-коды
+
+          // Показываем ТОЛЬКО если статус-код явно выбран
+          const shouldShow = selectedStatusCodes.includes(statusCode);
+
+          if (shouldShow) {
+            showNotification(error);
           }
         }
       }
     });
     return;
   }
+
 
   if (!extensionEnabled) return;
 
