@@ -1,6 +1,7 @@
 let currentErrors = [];
 let errorHistory = [];
 let extensionEnabled = true;
+let darkThemeEnabled = false;
 
 document.addEventListener('DOMContentLoaded', () => {
   loadExtensionState();
@@ -23,16 +24,23 @@ function setupEventListeners() {
   document.getElementById("notificationPosition").addEventListener("change", saveNotificationSettings);
   document.getElementById("filterByStatusCode").addEventListener("change", toggleStatusCodeFilter);
 
+  document.getElementById("toggleTheme").addEventListener("change", toggleTheme);
+
   document.querySelectorAll('.status-code-checkbox').forEach(checkbox => {
     checkbox.addEventListener('change', saveStatusCodeSettings);
   });
 }
 
 function loadExtensionState() {
-  chrome.storage.local.get(["extensionEnabled"], (result) => {
+  chrome.storage.local.get(["extensionEnabled", "darkThemeEnabled"], (result) => {
     extensionEnabled = result.extensionEnabled !== false;
+    darkThemeEnabled = result.darkThemeEnabled || false;
+
     document.getElementById("toggleExtension").checked = extensionEnabled;
+    document.getElementById("toggleTheme").checked = darkThemeEnabled;
+
     updateUIState(extensionEnabled);
+    updateTheme(darkThemeEnabled);
   });
 }
 
@@ -375,5 +383,35 @@ function clearHistory() {
       });
       setTimeout(updateStats, 100);
     });
+  }
+}
+
+function toggleTheme(e) {
+  const isDark = e.target.checked;
+  darkThemeEnabled = isDark;
+
+  chrome.storage.local.set({ darkThemeEnabled: isDark }, () => {
+    updateTheme(isDark);
+
+    // Отправляем сообщение всем вкладкам о смене темы
+    chrome.tabs.query({}, (tabs) => {
+      tabs.forEach(tab => {
+        if (tab.id) {
+          chrome.tabs.sendMessage(tab.id, {
+            type: "THEME_UPDATE",
+            darkThemeEnabled: isDark
+          }).catch(() => {});
+        }
+      });
+    });
+  });
+}
+
+
+function updateTheme(isDark) {
+  if (isDark) {
+    document.body.classList.add("dark-theme");
+  } else {
+    document.body.classList.remove("dark-theme");
   }
 }

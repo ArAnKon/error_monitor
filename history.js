@@ -1,8 +1,10 @@
 let allHistory = [];
 let filteredHistory = [];
+let darkThemeEnabled = false;
 
 // Инициализация
 document.addEventListener('DOMContentLoaded', () => {
+    loadThemeSettings();
     loadHistory();
     setupEventListeners();
 });
@@ -500,4 +502,20 @@ function formatDetailedTime(timestamp) {
 function truncateText(text, maxLength) {
     if (!text) return '';
     return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
+}
+
+function loadThemeSettings() {
+    chrome.storage.local.get(["darkThemeEnabled"], (result) => {
+        darkThemeEnabled = result.darkThemeEnabled || false;
+        updateTheme(darkThemeEnabled);
+    });
+}
+
+// Обновление темы
+function updateTheme(isDark) {
+    if (isDark) {
+        document.body.classList.add("dark-theme");
+    } else {
+        document.body.classList.remove("dark-theme");
+    }
 }

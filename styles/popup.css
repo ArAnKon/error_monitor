@@ -5,6 +5,8 @@
     --network-color: #3b82f6;
     --success-color: #10b981;
     --warning-color: #F59E0BFF;
+
+    /* Светлая тема */
     --bg-color: #f8fafc;
     --card-bg: #ffffff;
     --text-primary: #1e293b;
@@ -12,11 +14,27 @@
     --text-light: #94a3b8;
     --border-color: #e2e8f0;
     --border-light: #f1f5f9;
+
     --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
     --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
     --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
     --radius: 6px;
     --radius-lg: 8px;
+}
+
+/* Тёмная тема */
+body.dark-theme {
+    --bg-color: #0f172a;
+    --card-bg: #1e293b;
+    --text-primary: #f1f5f9;
+    --text-secondary: #94a3b8;
+    --text-light: #64748b;
+    --border-color: #334155;
+    --border-light: #1e293b;
+
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+    --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.4), 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 2px 4px -1px rgba(0, 0, 0, 0.4);
 }
 
 body {
@@ -30,6 +48,7 @@ body {
     color: var(--text-primary);
     line-height: 1.4;
     overflow: hidden;
+    transition: all 0.3s ease;
 }
 
 .popup-container {
@@ -103,6 +122,10 @@ body {
     border-radius: 2px;
 }
 
+.content-section::-webkit-scrollbar-thumb:hover {
+    background: var(--text-light);
+}
+
 /* STATS */
 .stats-grid {
     display: grid;
@@ -118,6 +141,7 @@ body {
     text-align: center;
     box-shadow: var(--shadow);
     border: 1px solid var(--border-light);
+    transition: all 0.3s ease;
 }
 
 .stat-number {
@@ -146,6 +170,7 @@ body {
     border: 1px solid var(--border-light);
     box-shadow: var(--shadow);
     flex-shrink: 0;
+    transition: all 0.3s ease;
 }
 
 .setting-item {
@@ -171,7 +196,9 @@ body {
     border-radius: var(--radius);
     font-size: 12px;
     background: var(--card-bg);
+    color: var(--text-primary);
     cursor: pointer;
+    transition: all 0.3s ease;
 }
 
 .setting-item select:focus {
@@ -191,6 +218,7 @@ body {
     user-select: none;
     padding: 8px 0;
     min-height: 20px;
+    transition: all 0.3s ease;
 }
 
 .setting-item .checkbox-custom {
@@ -215,6 +243,7 @@ body {
     user-select: none;
     padding: 3px 0;
     min-height: 16px;
+    transition: all 0.3s ease;
 }
 
 .status-codes-grid .checkbox-custom {
@@ -287,54 +316,6 @@ body {
     border-top: 1px solid var(--border-light);
 }
 
-/* МЕЛКИЕ ЧЕКБОКСЫ ДЛЯ СТАТУС-КОДОВ */
-.status-codes-grid .checkbox-label {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    cursor: pointer;
-    font-size: 10px;
-    color: var(--text-primary);
-    user-select: none;
-    padding: 3px 0;
-    min-height: 16px;
-}
-
-.status-codes-grid .checkbox-label.small {
-    font-size: 10px;
-}
-
-.status-codes-grid .checkbox-label input[type="checkbox"] {
-    display: none;
-}
-
-.status-codes-grid .checkbox-custom {
-    width: 14px;
-    height: 14px;
-    border: 1.5px solid var(--border-color);
-    border-radius: 3px;
-    background: var(--card-bg);
-    position: relative;
-    transition: all 0.2s ease;
-    flex-shrink: 0;
-}
-
-.status-codes-grid .checkbox-label input[type="checkbox"]:checked + .checkbox-custom {
-    background: var(--primary-color);
-    border-color: var(--primary-color);
-}
-
-.status-codes-grid .checkbox-label input[type="checkbox"]:checked + .checkbox-custom::after {
-    content: "✓";
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    color: white;
-    font-size: 9px;
-    font-weight: bold;
-}
-
 /* BUTTONS */
 .buttons-grid {
     display: grid;
@@ -357,11 +338,15 @@ button {
     justify-content: center;
     gap: 4px;
     min-height: 32px;
+    background: var(--card-bg);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
 }
 
 button:hover {
     transform: translateY(-1px);
     box-shadow: var(--shadow-md);
+    border-color: var(--primary-color);
 }
 
 .full-width {
@@ -371,36 +356,43 @@ button:hover {
 #clearAll {
     background: var(--success-color);
     color: white;
+    border-color: var(--success-color);
 }
 
 #captureScreenshot {
     background: var(--warning-color);
     color: white;
+    border-color: var(--warning-color);
 }
 
 #testError {
     background: var(--console-color);
     color: white;
+    border-color: var(--console-color);
 }
 
 #testNetwork {
     background: var(--network-color);
     color: white;
+    border-color: var(--network-color);
 }
 
 #showHistory {
     background: var(--primary-color);
     color: white;
+    border-color: var(--primary-color);
 }
 
 #exportHistory {
     background: var(--warning-color);
     color: white;
+    border-color: var(--warning-color);
 }
 
 #clearHistory.danger {
     background: var(--console-color);
     color: white;
+    border-color: var(--console-color);
 }
 
 /* TOGGLE SWITCH */
