@@ -1,4 +1,4 @@
-# 🚨 Error Monitor
+# <img src="https://github.com/ArAnKon/error_monitor/blob/5b6f8aec6f72ec24d84668ac245c41707f146ff8/icons/icon.png" width="32" height="32" alt="Error Monitor Icon"/> Error Monitor
 
 <div align="center">
 
