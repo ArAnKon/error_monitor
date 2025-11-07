@@ -64,7 +64,7 @@ function loadStatusCodeSettings() {
       statusCodesSection.classList.add("visible");
     }
 
-    // Снимаем все галочки по умолчанию
+    // Все галочки по умолчанию отжаты
     document.querySelectorAll('.status-code-checkbox').forEach(checkbox => {
       checkbox.checked = selectedCodes.includes(checkbox.value);
     });
@@ -393,7 +393,7 @@ function toggleTheme(e) {
   chrome.storage.local.set({ darkThemeEnabled: isDark }, () => {
     updateTheme(isDark);
 
-    // Отправляем сообщение всем вкладкам о смене темы
+    // Сообщение всем вкладкам о смене темы
     chrome.tabs.query({}, (tabs) => {
       tabs.forEach(tab => {
         if (tab.id) {

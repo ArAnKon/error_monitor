@@ -351,3 +351,45 @@ body.dark-theme .status-error {
     margin-bottom: 6px;
   }
 }
+
+.screenshot-btn {
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
+  padding: 4px 8px;
+  font-size: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--warning-color);
+  border-color: rgba(245, 158, 11, 0.2);
+}
+
+body.dark-theme .screenshot-btn {
+  border-color: rgba(245, 158, 11, 0.4);
+}
+
+.screenshot-btn:hover {
+  background: rgba(245, 158, 11, 0.05);
+  border-color: var(--warning-color);
+  color: var(--warning-color);
+}
+
+body.dark-theme .screenshot-btn:hover {
+  background: rgba(245, 158, 11, 0.1);
+}
+
+.screenshot-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+.screenshot-btn:disabled:hover {
+  background: var(--card-bg);
+  border-color: var(--border-color);
+}

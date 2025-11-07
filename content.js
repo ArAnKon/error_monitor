@@ -34,7 +34,7 @@ chrome.storage.local.get([
   }
 });
 
-// Функция для применения темы к body
+// Функция для применения темы
 function updateBodyTheme() {
   if (darkThemeEnabled) {
     document.body.classList.add("dark-theme");
@@ -62,12 +62,11 @@ function showNotification(errorData) {
   const notification = document.createElement("div");
   notification.className = `error-notification ${errorData.type.toLowerCase()}-notification`;
 
-  // Применяем тему к уведомлению
+  // Применить тему к уведомления
   if (darkThemeEnabled) {
     notification.classList.add("dark-theme");
   }
 
-  // Устанавливаем позицию
   if (notificationPosition === "top-right") {
     notification.style.top = '20px';
     notification.style.bottom = 'auto';
@@ -117,6 +116,7 @@ function showNotification(errorData) {
             <span>${new Date().toLocaleTimeString()} • ${window.location.hostname}</span>
             <div class="notification-actions">
                 ${isNetworkError ? '<button class="copy-curl-btn" title="Скопировать cURL">📋 cURL</button>' : ''}
+                <button class="screenshot-btn" title="Сделать скриншот">📸 Скриншот</button>
                 <button class="details-btn" title="Показать детали">🔍 Детали</button>
             </div>
         </div>
@@ -147,6 +147,13 @@ function showNotification(errorData) {
     });
   }
 
+  // Обработчик для кнопки скриншота
+  const screenshotBtn = notification.querySelector('.screenshot-btn');
+  screenshotBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    captureScreenshotForError(errorData, notification);
+  });
+
   document.body.appendChild(notification);
   notificationStack.push(notification);
   updateNotificationPositions();
@@ -154,6 +161,96 @@ function showNotification(errorData) {
   setTimeout(() => {
     removeNotification(notification);
   }, 10000);
+}
+
+// Функция для создания скриншота для ошибки
+async function captureScreenshotForError(errorData, notification) {
+  try {
+    const screenshotBtn = notification.querySelector('.screenshot-btn');
+    const originalText = screenshotBtn.textContent;
+    screenshotBtn.textContent = '📸 Создание...';
+    screenshotBtn.disabled = true;
+
+    // Запрашиваем скриншот через background script!!!!!!
+    const screenshotDataUrl = await new Promise((resolve) => {
+      chrome.runtime.sendMessage(
+          { type: "CAPTURE_SCREENSHOT" },
+          (response) => {
+            resolve(response?.screenshot || null);
+          }
+      );
+    });
+
+    if (!screenshotDataUrl) {
+      throw new Error('Не удалось создать скриншот');
+    }
+
+    const storageHistory = await new Promise(resolve => {
+      chrome.storage.local.get(['errorHistory'], (result) => {
+        resolve(result.errorHistory || []);
+      });
+    });
+
+    const updatedHistory = storageHistory.map(error => {
+      if (error.id === errorData.id) {
+        return {
+          ...error,
+          screenshot: screenshotDataUrl,
+          hasScreenshot: true,
+          screenshotTimestamp: new Date().toISOString()
+        };
+      }
+      return error;
+    });
+
+    await new Promise(resolve => {
+      chrome.storage.local.set({ errorHistory: updatedHistory }, resolve);
+    });
+
+    const errorIndex = currentTabErrors.findIndex(error => error.id === errorData.id);
+    if (errorIndex > -1) {
+      currentTabErrors[errorIndex] = {
+        ...currentTabErrors[errorIndex],
+        screenshot: screenshotDataUrl,
+        hasScreenshot: true,
+        screenshotTimestamp: new Date().toISOString()
+      };
+    }
+
+    screenshotBtn.textContent = '📸 Успешно!';
+    notification.classList.add("copy-success");
+
+    // Автоматическое скачивание скриншота
+    await downloadScreenshot(screenshotDataUrl, `error-${errorData.id}`);
+
+    setTimeout(() => {
+      screenshotBtn.textContent = originalText;
+      screenshotBtn.disabled = false;
+      notification.classList.remove("copy-success");
+    }, 2000);
+
+  } catch (error) {
+    const screenshotBtn = notification.querySelector('.screenshot-btn');
+    screenshotBtn.textContent = '📸 Ошибка!';
+    setTimeout(() => {
+      screenshotBtn.textContent = '📸 Скриншот';
+      screenshotBtn.disabled = false;
+    }, 2000);
+  }
+}
+
+// Функция для скачивания скриншота
+function downloadScreenshot(dataUrl, prefix) {
+  return new Promise((resolve) => {
+    const link = document.createElement('a');
+    link.href = dataUrl;
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    link.download = `screenshot-${prefix}-${timestamp}.jpg`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    resolve();
+  });
 }
 
 // Функция для открытия деталей ошибки в истории
@@ -319,7 +416,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     darkThemeEnabled = request.darkThemeEnabled;
     updateBodyTheme();
 
-    // Обновляем тему существующих уведомлений
+    // Если меняекм тему при уже существующих нотификациях
     notificationStack.forEach(notification => {
       if (darkThemeEnabled) {
         notification.classList.add("dark-theme");
