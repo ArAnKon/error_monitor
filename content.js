@@ -5,13 +5,15 @@ let notificationStack = [];
 let notificationPosition = "bottom-right";
 let filterByStatusCode = false;
 let selectedStatusCodes = [];
+let darkThemeEnabled = false;
 
 chrome.storage.local.get([
   "extensionEnabled",
   "errorHistory",
   "notificationPosition",
   "filterByStatusCode",
-  "selectedStatusCodes"
+  "selectedStatusCodes",
+  "darkThemeEnabled"
 ], (result) => {
   extensionEnabled = result.extensionEnabled !== false;
   if (result.errorHistory) {
@@ -26,7 +28,20 @@ chrome.storage.local.get([
   if (result.selectedStatusCodes) {
     selectedStatusCodes = result.selectedStatusCodes;
   }
+  if (result.darkThemeEnabled) {
+    darkThemeEnabled = result.darkThemeEnabled;
+    updateBodyTheme();
+  }
 });
+
+// Функция для применения темы к body
+function updateBodyTheme() {
+  if (darkThemeEnabled) {
+    document.body.classList.add("dark-theme");
+  } else {
+    document.body.classList.remove("dark-theme");
+  }
+}
 
 function showNotification(errorData) {
   if (!extensionEnabled) return;
@@ -35,13 +50,10 @@ function showNotification(errorData) {
   if (filterByStatusCode && errorData.type === "NETWORK_ERROR") {
     const statusCode = errorData.details?.statusCode?.toString() || "0";
 
-    // Если фильтр включен и статус-код не выбран - НЕ показываем уведомление
     if (!selectedStatusCodes.includes(statusCode)) {
       return;
     }
 
-    // Дополнительная проверка: если у ошибки нет статус-кода (undefined)
-    // и "0" не выбран - не показываем
     if (errorData.details?.statusCode === undefined && !selectedStatusCodes.includes("0")) {
       return;
     }
@@ -50,6 +62,12 @@ function showNotification(errorData) {
   const notification = document.createElement("div");
   notification.className = `error-notification ${errorData.type.toLowerCase()}-notification`;
 
+  // Применяем тему к уведомлению
+  if (darkThemeEnabled) {
+    notification.classList.add("dark-theme");
+  }
+
+  // Устанавливаем позицию
   if (notificationPosition === "top-right") {
     notification.style.top = '20px';
     notification.style.bottom = 'auto';
@@ -140,12 +158,10 @@ function showNotification(errorData) {
 
 // Функция для открытия деталей ошибки в истории
 function openErrorDetails(errorData) {
-  // Сохраняем ID ошибки для открытия в истории
   chrome.storage.local.set({
     errorToShowInHistory: errorData.id,
     openHistoryOnLoad: true
   }, () => {
-    // Открываем окно истории
     chrome.runtime.sendMessage({
       type: "OPEN_HISTORY_WITH_ERROR",
       errorId: errorData.id
@@ -273,7 +289,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     filterByStatusCode = request.filterEnabled;
     selectedStatusCodes = request.selectedStatusCodes || [];
 
-    // Пересоздаем уведомления с учетом фильтрации
     notificationStack.forEach(notification => {
       if (notification.parentElement) {
         notification.remove();
@@ -281,17 +296,14 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     });
     notificationStack = [];
 
-    // Показываем только те ошибки, которые проходят фильтр
     currentTabErrors.forEach(error => {
       if (error.type === "CONSOLE_ERROR") {
-        showNotification(error); // Console errors всегда показываем
+        showNotification(error);
       } else if (error.type === "NETWORK_ERROR") {
         if (!filterByStatusCode) {
-          showNotification(error); // Если фильтр выключен, показываем все Network ошибки
+          showNotification(error);
         } else {
           const statusCode = error.details?.statusCode?.toString() || "0";
-
-          // Показываем ТОЛЬКО если статус-код явно выбран
           const shouldShow = selectedStatusCodes.includes(statusCode);
 
           if (shouldShow) {
@@ -303,6 +315,20 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     return;
   }
 
+  if (request.type === "THEME_UPDATE") {
+    darkThemeEnabled = request.darkThemeEnabled;
+    updateBodyTheme();
+
+    // Обновляем тему существующих уведомлений
+    notificationStack.forEach(notification => {
+      if (darkThemeEnabled) {
+        notification.classList.add("dark-theme");
+      } else {
+        notification.classList.remove("dark-theme");
+      }
+    });
+    return;
+  }
 
   if (!extensionEnabled) return;
 
