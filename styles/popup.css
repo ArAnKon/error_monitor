@@ -15,96 +15,105 @@
     --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
     --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
     --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-    --radius: 8px;
-    --radius-lg: 12px;
+    --radius: 6px;
+    --radius-lg: 8px;
 }
 
 body {
-    width: 380px;
-    max-height: 600px;
-    padding: 16px;
+    width: 400px;
+    max-height: 800px;
+    height: 800px;
+    padding: 12px;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     background: var(--bg-color);
     margin: 0;
     color: var(--text-primary);
-    line-height: 1.5;
+    line-height: 1.4;
     overflow: hidden;
 }
 
 .popup-container {
     display: flex;
     flex-direction: column;
-    gap: 12px;
-    max-height: 568px;
+    gap: 10px;
+    height: 100%;
 }
 
+/* HEADER */
 .header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding-bottom: 12px;
+    padding-bottom: 10px;
     border-bottom: 1px solid var(--border-light);
     flex-shrink: 0;
+}
+
+.header h3 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.header h3::before {
+    content: "🚨";
+    font-size: 14px;
 }
 
 .header-controls {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 10px;
 }
 
-h3 {
-    margin: 0;
-    font-size: 16px;
-    font-weight: 600;
-    color: var(--text-primary);
-    display: flex;
-    align-items: center;
-    gap: 8px;
+#totalCount {
+    background: var(--primary-color);
+    color: white;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 700;
+    min-width: 20px;
+    text-align: center;
 }
 
-h3::before {
-    content: "🚨";
-    font-size: 14px;
-}
-
+/* CONTENT */
 .content-section {
     flex: 1;
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 10px;
     overflow-y: auto;
-    padding-right: 4px;
+    padding-right: 2px;
 }
 
 .content-section::-webkit-scrollbar {
-    width: 6px;
+    width: 4px;
 }
 
 .content-section::-webkit-scrollbar-track {
     background: var(--bg-color);
-    border-radius: 3px;
 }
 
 .content-section::-webkit-scrollbar-thumb {
     background: var(--border-color);
-    border-radius: 3px;
+    border-radius: 2px;
 }
 
-.content-section::-webkit-scrollbar-thumb:hover {
-    background: var(--text-light);
-}
-
+/* STATS */
 .stats-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 8px;
+    gap: 6px;
     flex-shrink: 0;
 }
 
 .stat-card {
     background: var(--card-bg);
-    padding: 12px;
+    padding: 10px;
     border-radius: var(--radius);
     text-align: center;
     box-shadow: var(--shadow);
@@ -112,32 +121,24 @@ h3::before {
 }
 
 .stat-number {
-    font-size: 18px;
+    font-size: 16px;
     font-weight: 700;
-    margin-bottom: 4px;
+    margin-bottom: 2px;
 }
 
-.stat-card.total .stat-number {
-    color: var(--primary-color);
-}
-
-.stat-card.console .stat-number {
-    color: var(--console-color);
-}
-
-.stat-card.network .stat-number {
-    color: var(--network-color);
-}
+.stat-card.total .stat-number { color: var(--primary-color); }
+.stat-card.console .stat-number { color: var(--console-color); }
+.stat-card.network .stat-number { color: var(--network-color); }
 
 .stat-label {
-    font-size: 11px;
+    font-size: 10px;
     color: var(--text-secondary);
     font-weight: 500;
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }
 
-/* СТИЛИ ДЛЯ НАСТРОЕК */
+/* SETTINGS */
 .settings-section {
     background: var(--card-bg);
     padding: 12px;
@@ -148,9 +149,6 @@ h3::before {
 }
 
 .setting-item {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
     margin-bottom: 12px;
 }
 
@@ -162,52 +160,77 @@ h3::before {
     font-size: 12px;
     font-weight: 600;
     color: var(--text-secondary);
+    display: block;
+    margin-bottom: 6px;
 }
 
 .setting-item select {
-    padding: 8px 10px;
+    width: 100%;
+    padding: 6px 8px;
     border: 1px solid var(--border-color);
     border-radius: var(--radius);
     font-size: 12px;
     background: var(--card-bg);
     cursor: pointer;
-    transition: all 0.2s ease;
 }
 
 .setting-item select:focus {
     outline: none;
     border-color: var(--primary-color);
-    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.1);
 }
 
-/* СТИЛИ ДЛЯ КАСТОМНЫХ ЧЕКБОКСОВ */
-.checkbox-label {
+/* ОСНОВНОЙ ЧЕКБОКС ФИЛЬТРА */
+.setting-item .checkbox-label {
     display: flex;
     align-items: center;
     gap: 8px;
     cursor: pointer;
-    font-size: 12px;
+    font-size: 13px;
+    font-weight: 600;
     color: var(--text-primary);
     user-select: none;
-    padding: 4px 0;
+    padding: 8px 0;
+    min-height: 20px;
 }
 
-.checkbox-label.small {
-    font-size: 11px;
-}
-
-.checkbox-label input[type="checkbox"] {
-    display: none;
-}
-
-.checkbox-custom {
-    width: 16px;
-    height: 16px;
+.setting-item .checkbox-custom {
+    width: 18px;
+    height: 18px;
     border: 2px solid var(--border-color);
     border-radius: 4px;
     background: var(--card-bg);
     position: relative;
     transition: all 0.2s ease;
+    flex-shrink: 0;
+}
+
+/* МЕЛКИЕ ЧЕКБОКСЫ ДЛЯ СТАТУС-КОДОВ */
+.status-codes-grid .checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    font-size: 10px;
+    color: var(--text-primary);
+    user-select: none;
+    padding: 3px 0;
+    min-height: 16px;
+}
+
+.status-codes-grid .checkbox-custom {
+    width: 14px;
+    height: 14px;
+    border: 1.5px solid var(--border-color);
+    border-radius: 3px;
+    background: var(--card-bg);
+    position: relative;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+}
+
+/* ОБЩИЕ СТИЛИ ДЛЯ ВСЕХ ЧЕКБОКСОВ */
+.checkbox-label input[type="checkbox"] {
+    display: none;
 }
 
 .checkbox-label input[type="checkbox"]:checked + .checkbox-custom {
@@ -222,15 +245,19 @@ h3::before {
     left: 50%;
     transform: translate(-50%, -50%);
     color: white;
-    font-size: 10px;
     font-weight: bold;
 }
 
-.checkbox-label:hover .checkbox-custom {
-    border-color: var(--primary-light);
+/* Разные размеры галочек для больших и маленьких чекбоксов */
+.setting-item .checkbox-label input[type="checkbox"]:checked + .checkbox-custom::after {
+    font-size: 12px;
 }
 
-/* СЕТКА ДЛЯ СТАТУС-КОДОВ */
+.status-codes-grid .checkbox-label input[type="checkbox"]:checked + .checkbox-custom::after {
+    font-size: 9px;
+}
+
+/* STATUS CODES */
 .status-codes-section {
     max-height: 0;
     overflow: hidden;
@@ -238,31 +265,90 @@ h3::before {
 }
 
 .status-codes-section.visible {
-    max-height: 120px;
+    max-height: 140px;
+    overflow-y: auto;
+}
+
+.status-codes-section.visible::-webkit-scrollbar {
+    width: 4px;
+}
+
+.status-codes-section.visible::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+    border-radius: 2px;
 }
 
 .status-codes-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 6px;
+    gap: 4px;
     margin-top: 8px;
     padding-top: 8px;
     border-top: 1px solid var(--border-light);
 }
 
+/* МЕЛКИЕ ЧЕКБОКСЫ ДЛЯ СТАТУС-КОДОВ */
+.status-codes-grid .checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    font-size: 10px;
+    color: var(--text-primary);
+    user-select: none;
+    padding: 3px 0;
+    min-height: 16px;
+}
+
+.status-codes-grid .checkbox-label.small {
+    font-size: 10px;
+}
+
+.status-codes-grid .checkbox-label input[type="checkbox"] {
+    display: none;
+}
+
+.status-codes-grid .checkbox-custom {
+    width: 14px;
+    height: 14px;
+    border: 1.5px solid var(--border-color);
+    border-radius: 3px;
+    background: var(--card-bg);
+    position: relative;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+}
+
+.status-codes-grid .checkbox-label input[type="checkbox"]:checked + .checkbox-custom {
+    background: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.status-codes-grid .checkbox-label input[type="checkbox"]:checked + .checkbox-custom::after {
+    content: "✓";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: white;
+    font-size: 9px;
+    font-weight: bold;
+}
+
+/* BUTTONS */
 .buttons-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
-    gap: 8px;
+    gap: 6px;
     flex-shrink: 0;
 }
 
 button {
-    padding: 10px 12px;
+    padding: 8px 10px;
     border: none;
     border-radius: var(--radius);
     cursor: pointer;
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 600;
     transition: all 0.2s ease;
     font-family: inherit;
@@ -270,6 +356,7 @@ button {
     align-items: center;
     justify-content: center;
     gap: 4px;
+    min-height: 32px;
 }
 
 button:hover {
@@ -277,7 +364,6 @@ button:hover {
     box-shadow: var(--shadow-md);
 }
 
-/* КНОПКИ НА ВСЮ ШИРИНУ */
 .full-width {
     grid-column: span 2;
 }
@@ -290,13 +376,6 @@ button:hover {
 #captureScreenshot {
     background: var(--warning-color);
     color: white;
-}
-
-#captureScreenshot:disabled {
-    background: var(--text-light);
-    cursor: not-allowed;
-    transform: none !important;
-    box-shadow: none !important;
 }
 
 #testError {
@@ -324,24 +403,12 @@ button:hover {
     color: white;
 }
 
-#totalCount {
-    background: var(--primary-color);
-    color: white;
-    padding: 4px 8px;
-    border-radius: 12px;
-    font-size: 11px;
-    font-weight: 700;
-    min-width: 20px;
-    text-align: center;
-    box-shadow: var(--shadow-sm);
-}
-
-/* Стили для переключателя */
+/* TOGGLE SWITCH */
 .switch {
     position: relative;
     display: inline-block;
-    width: 40px;
-    height: 20px;
+    width: 36px;
+    height: 18px;
 }
 
 .switch input {
@@ -365,8 +432,8 @@ button:hover {
 .slider:before {
     position: absolute;
     content: "";
-    height: 16px;
-    width: 16px;
+    height: 14px;
+    width: 14px;
     left: 2px;
     bottom: 2px;
     background-color: white;
@@ -379,10 +446,10 @@ input:checked + .slider {
 }
 
 input:checked + .slider:before {
-    transform: translateX(20px);
+    transform: translateX(18px);
 }
 
-/* Стили для отключенного состояния */
+/* DISABLED STATE */
 body.disabled .content-section,
 body.disabled .buttons-grid button:not(#toggleExtension) {
     opacity: 0.6;
@@ -393,16 +460,12 @@ body.disabled .header h3 {
     color: var(--text-light);
 }
 
-/* Анимации */
-button, .switch, .checkbox-label {
-    transition: all 0.2s ease;
-}
-
-/* Адаптивность */
+/* RESPONSIVE */
 @media (max-width: 480px) {
     body {
-        width: 340px;
-        padding: 12px;
+        width: 360px;
+        height: 750px;
+        padding: 10px;
     }
 
     .status-codes-grid {

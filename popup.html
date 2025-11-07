@@ -44,14 +44,16 @@
         </select>
       </div>
 
+      <!-- ОСНОВНОЙ ЧЕКБОКС ФИЛЬТРА - ТОЛЬКО ОДИН -->
       <div class="setting-item">
         <label class="checkbox-label">
           <input type="checkbox" id="filterByStatusCode">
           <span class="checkbox-custom"></span>
-          Фильтровать по статус-кодам
+          Фильтровать ошибки по статус-кодам
         </label>
       </div>
 
+      <!-- СЕКЦИЯ СТАТУС-КОДОВ (появляется при включении фильтра) -->
       <div class="status-codes-section" id="statusCodesSection">
         <div class="status-codes-grid">
           <label class="checkbox-label small">
@@ -92,7 +94,7 @@
           <label class="checkbox-label small">
             <input type="checkbox" value="0" class="status-code-checkbox">
             <span class="checkbox-custom"></span>
-            Network Error
+            Network Errors (без статус-кода)
           </label>
         </div>
       </div>

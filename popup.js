@@ -45,8 +45,9 @@ function loadNotificationSettings() {
 
 function loadStatusCodeSettings() {
   chrome.storage.local.get(["filterByStatusCode", "selectedStatusCodes"], (result) => {
+    // По умолчанию фильтр ВЫКЛЮЧЕН и никакие статус-коды не выбраны
     const filterEnabled = result.filterByStatusCode || false;
-    const selectedCodes = result.selectedStatusCodes || ["400", "404", "500", "0"];
+    const selectedCodes = result.selectedStatusCodes || []; // Пустой массив по умолчанию
 
     document.getElementById("filterByStatusCode").checked = filterEnabled;
 
@@ -55,6 +56,7 @@ function loadStatusCodeSettings() {
       statusCodesSection.classList.add("visible");
     }
 
+    // Снимаем все галочки по умолчанию
     document.querySelectorAll('.status-code-checkbox').forEach(checkbox => {
       checkbox.checked = selectedCodes.includes(checkbox.value);
     });
