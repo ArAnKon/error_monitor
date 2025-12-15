@@ -22,8 +22,8 @@ function setupEventListeners() {
   document.getElementById("clearHistory").addEventListener("click", clearHistory);
 
   document.getElementById("notificationPosition").addEventListener("change", saveNotificationSettings);
+  document.getElementById("notificationTimer").addEventListener("change", saveNotificationSettings);
   document.getElementById("filterByStatusCode").addEventListener("change", toggleStatusCodeFilter);
-
   document.getElementById("toggleTheme").addEventListener("change", toggleTheme);
 
   document.querySelectorAll('.status-code-checkbox').forEach(checkbox => {
@@ -45,17 +45,19 @@ function loadExtensionState() {
 }
 
 function loadNotificationSettings() {
-  chrome.storage.local.get(["notificationPosition"], (result) => {
+  chrome.storage.local.get(["notificationPosition", "notificationTimer"], (result) => {
     const position = result.notificationPosition || "bottom-right";
+    const timer = result.notificationTimer || "10000";
+
     document.getElementById("notificationPosition").value = position;
+    document.getElementById("notificationTimer").value = timer;
   });
 }
 
 function loadStatusCodeSettings() {
   chrome.storage.local.get(["filterByStatusCode", "selectedStatusCodes"], (result) => {
-    // По умолчанию фильтр ВЫКЛЮЧЕН и никакие статус-коды не выбраны
     const filterEnabled = result.filterByStatusCode || false;
-    const selectedCodes = result.selectedStatusCodes || []; // Пустой массив по умолчанию
+    const selectedCodes = result.selectedStatusCodes || [];
 
     document.getElementById("filterByStatusCode").checked = filterEnabled;
 
@@ -64,7 +66,6 @@ function loadStatusCodeSettings() {
       statusCodesSection.classList.add("visible");
     }
 
-    // Все галочки по умолчанию отжаты
     document.querySelectorAll('.status-code-checkbox').forEach(checkbox => {
       checkbox.checked = selectedCodes.includes(checkbox.value);
     });
@@ -73,13 +74,20 @@ function loadStatusCodeSettings() {
 
 function saveNotificationSettings() {
   const position = document.getElementById("notificationPosition").value;
-  chrome.storage.local.set({ notificationPosition: position }, () => {
+  const timer = document.getElementById("notificationTimer").value;
+
+  chrome.storage.local.set({
+    notificationPosition: position,
+    notificationTimer: timer
+  }, () => {
+    // Отправляем единое сообщение со всеми настройками
     chrome.tabs.query({}, (tabs) => {
       tabs.forEach(tab => {
         if (tab.id) {
           chrome.tabs.sendMessage(tab.id, {
-            type: "NOTIFICATION_POSITION_UPDATE",
-            position: position
+            type: "NOTIFICATION_SETTINGS_UPDATE",
+            position: position,
+            timer: parseInt(timer)
           }).catch(() => {});
         }
       });
@@ -393,7 +401,6 @@ function toggleTheme(e) {
   chrome.storage.local.set({ darkThemeEnabled: isDark }, () => {
     updateTheme(isDark);
 
-    // Сообщение всем вкладкам о смене темы
     chrome.tabs.query({}, (tabs) => {
       tabs.forEach(tab => {
         if (tab.id) {
@@ -406,7 +413,6 @@ function toggleTheme(e) {
     });
   });
 }
-
 
 function updateTheme(isDark) {
   if (isDark) {
