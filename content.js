@@ -79,21 +79,46 @@ function downloadCurlCommand(errorData) {
   URL.revokeObjectURL(url);
 }
 
+// Функция проверки должна ли отображаться ошибка с учетом фильтров
+function shouldShowError(errorData) {
+  // Если фильтр по статус-кодам выключен - показываем все
+  if (!filterByStatusCode) {
+    return true;
+  }
+
+  // Console errors всегда показываем (если не добавим фильтрацию для них позже)
+  if (errorData.type === "CONSOLE_ERROR") {
+    return true;
+  }
+
+  // Для Network errors проверяем статус-код
+  if (errorData.type === "NETWORK_ERROR") {
+    const statusCode = errorData.details?.statusCode;
+    const statusCodeStr = statusCode?.toString() || "0";
+
+    // Проверяем, включен ли статус-код в выбранные фильтры
+    const isSelected = selectedStatusCodes.includes(statusCodeStr);
+
+    // Дополнительная проверка: если статус-код undefined или 0,
+    // но в фильтрах есть "0" (Network Errors без статус-кода), то показываем
+    if ((statusCode === undefined || statusCode === 0) && selectedStatusCodes.includes("0")) {
+      return true;
+    }
+
+    // Возвращаем true только если статус-код выбран в фильтрах
+    return isSelected;
+  }
+
+  return true;
+}
+
 // Функция для отображения уведомления
 function showNotification(errorData) {
   if (!extensionEnabled) return;
 
   // Проверка фильтрации по статус-кодам
-  if (filterByStatusCode && errorData.type === "NETWORK_ERROR") {
-    const statusCode = errorData.details?.statusCode?.toString() || "0";
-
-    if (!selectedStatusCodes.includes(statusCode)) {
-      return;
-    }
-
-    if (errorData.details?.statusCode === undefined && !selectedStatusCodes.includes("0")) {
-      return;
-    }
+  if (!shouldShowError(errorData)) {
+    return;
   }
 
   const notification = document.createElement("div");
@@ -111,7 +136,7 @@ function showNotification(errorData) {
 
   // Индикатор статуса для сетевых ошибок
   let statusIndicator = '';
-  if (errorData.type === "NETWORK_ERROR" && errorData.details?.statusCode) {
+  if (errorData.type === "NETWORK_ERROR" && errorData.details?.statusCode !== undefined) {
     const statusCode = errorData.details.statusCode;
     let statusClass = '';
     let statusText = statusCode.toString();
@@ -176,6 +201,8 @@ function showNotification(errorData) {
 
       // Сначала копируем в буфер обмена
       await copyCurl(errorData);
+
+      // Добавляем класс успеха ко всему уведомлению
       notification.classList.add("copy-success");
 
       // Затем скачиваем как файл
@@ -183,7 +210,10 @@ function showNotification(errorData) {
         downloadCurlCommand(errorData);
       }, 500);
 
-      setTimeout(() => notification.classList.remove("copy-success"), 2000);
+      // Убираем класс через 2 секунды
+      setTimeout(() => {
+        notification.classList.remove("copy-success");
+      }, 2000);
     });
   }
 
@@ -202,17 +232,22 @@ function showNotification(errorData) {
 
     notification.appendChild(timerBar);
 
-    // Запускаем анимацию таймера
+    // Запускаем анимацию таймера с небольшой задержкой
     setTimeout(() => {
       timerBar.style.width = '0%';
     }, 50);
   }
 
+  // Добавляем уведомление на страницу
   document.body.appendChild(notification);
+
+  // Добавляем в стек уведомлений
   notificationStack.push(notification);
+
+  // Обновляем позиции всех уведомлений
   updateNotificationPositions();
 
-  // Устанавливаем таймер скрытия
+  // Устанавливаем таймер скрытия, только если notificationTimer > 0
   if (notificationTimer > 0) {
     setTimeout(() => {
       removeNotification(notification);
@@ -275,6 +310,7 @@ async function captureScreenshotForError(errorData, notification) {
     }
 
     screenshotBtn.textContent = '📸 Успешно!';
+    // Добавляем класс успеха ко всему уведомлению
     notification.classList.add("copy-success");
 
     // Автоматическое скачивание скриншота
@@ -463,7 +499,11 @@ function handleError(errorData) {
     timestamp: error.timestamp instanceof Date ? error.timestamp.toISOString() : error.timestamp
   }));
   chrome.storage.local.set({ errorHistory: toSave });
-  showNotification(errorData);
+
+  // Показываем уведомление только если оно проходит фильтрацию
+  if (shouldShowError(errorData)) {
+    showNotification(errorData);
+  }
 }
 
 // Обработчик сообщений от расширения
@@ -496,7 +536,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     filterByStatusCode = request.filterEnabled;
     selectedStatusCodes = request.selectedStatusCodes || [];
 
-    // Удаляем все текущие уведомления
+    // Полностью очищаем текущие уведомления
     notificationStack.forEach(notification => {
       if (notification.parentElement) {
         notification.remove();
@@ -504,21 +544,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     });
     notificationStack = [];
 
-    // Показываем только те ошибки, которые соответствуют фильтру
+    // Пересоздаем только те уведомления, которые соответствуют новым фильтрам
     currentTabErrors.forEach(error => {
-      if (error.type === "CONSOLE_ERROR") {
+      if (shouldShowError(error)) {
         showNotification(error);
-      } else if (error.type === "NETWORK_ERROR") {
-        if (!filterByStatusCode) {
-          showNotification(error);
-        } else {
-          const statusCode = error.details?.statusCode?.toString() || "0";
-          const shouldShow = selectedStatusCodes.includes(statusCode);
-
-          if (shouldShow) {
-            showNotification(error);
-          }
-        }
       }
     });
     return;

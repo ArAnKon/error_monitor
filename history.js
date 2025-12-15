@@ -66,9 +66,7 @@ function matchesTimeFilter(error, timeFilter) {
     switch (timeFilter) {
         case 'today': {
             const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-            const todayEnd = new Date(todayStart);
-            todayEnd.setDate(todayEnd.getDate() + 1);
-            return errorTime >= todayStart && errorTime < todayEnd;
+            return errorTime >= todayStart;
         }
         case 'week': {
             const weekAgo = new Date(now);
@@ -115,8 +113,14 @@ function applyFilters() {
                     if (!statusCode || statusCode < 500) return false;
                     break;
                 case 'network-error':
-                    if (statusCode !== 0) return false;
+                    // Строгая проверка: статус-код должен быть 0 или отсутствовать
+                    if (statusCode !== 0 && statusCode !== undefined) return false;
                     break;
+                default:
+                    // Если выбран конкретный статус-код
+                    if (statusFilter !== 'all' && statusCode !== parseInt(statusFilter)) {
+                        return false;
+                    }
             }
         }
 
