@@ -307,11 +307,44 @@ function showErrorDetail(error) {
         const curlCommand = generateCurlCommand(error);
         document.getElementById('curlCommand').textContent = curlCommand;
         document.getElementById('copyCurl').dataset.curl = curlCommand;
+
+        // обработчик для кнопки копирования cURL
+        document.getElementById('copyCurl').onclick = () => {
+            // Копируем в буфер обмена
+            navigator.clipboard.writeText(curlCommand).then(() => {
+                showSuccessMessage('cURL скопирован в буфер обмена!');
+
+                // Скачка как .txt файл через 500мс
+                setTimeout(() => {
+                    downloadCurl();
+                }, 500);
+            }).catch(err => {
+                console.error('Failed to copy cURL:', err);
+                showSuccessMessage('Ошибка копирования cURL');
+            });
+        };
     } else {
         networkSection.classList.add('hidden');
         curlButton.classList.add('hidden');
         curlPreview.classList.add('hidden');
     }
+}
+
+
+function setupEventListeners() {
+    document.getElementById('backButton').addEventListener('click', () => {
+        window.close();
+    });
+
+    document.getElementById('typeFilter').addEventListener('change', applyFilters);
+    document.getElementById('statusFilter').addEventListener('change', applyFilters);
+    document.getElementById('timeFilter').addEventListener('change', applyFilters);
+    document.getElementById('searchInput').addEventListener('input', applyFilters);
+
+    document.getElementById('clearHistory').addEventListener('click', clearHistory);
+    document.getElementById('backToList').addEventListener('click', showList);
+    // Убираем старый обработчик для copyCurl, так как он теперь устанавливается динамически
+    document.getElementById('copyDetails').addEventListener('click', copyErrorDetails);
 }
 
 // Загрузка скриншота для ошибки
@@ -362,6 +395,40 @@ function copyCurl() {
         console.error('Failed to copy cURL:', err);
         showSuccessMessage('Ошибка копирования cURL');
     });
+}
+
+function downloadCurl() {
+    const curlCommand = document.getElementById('copyCurl').dataset.curl;
+
+    if (!curlCommand) {
+        showSuccessMessage('Нет cURL команды для скачивания');
+        return;
+    }
+
+    // Создаем Blob с текстом cURL
+    const blob = new Blob([curlCommand], { type: 'text/plain;charset=utf-8' });
+
+    // Создаем URL для Blob
+    const url = URL.createObjectURL(blob);
+
+    // Создаем временную ссылку для скачивания
+    const link = document.createElement('a');
+    link.href = url;
+
+    // Генерируем имя файла с датой
+    const now = new Date();
+    const timestamp = now.toISOString().replace(/[:.]/g, '-').split('T')[0];
+    link.download = `curl-command-${timestamp}.txt`;
+
+    // Добавляем на страницу и кликаем
+    document.body.appendChild(link);
+    link.click();
+
+    // Убираем ссылку и освобождаем память
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    showSuccessMessage('cURL команда скачана как .txt файл!');
 }
 
 // Копирование деталей ошибки
