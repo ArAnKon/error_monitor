@@ -42,3 +42,23 @@ chrome.webRequest.onErrorOccurred.addListener(
     },
     { urls: ["<all_urls>"] }
 );
+
+// Обработчик для обновления настроек
+chrome.storage.onChanged.addListener((changes, namespace) => {
+    if (namespace === 'local') {
+        if (changes.notificationTimer || changes.notificationPosition) {
+            // Отправляем сообщение всем вкладкам об обновлении настроек
+            chrome.tabs.query({}, (tabs) => {
+                tabs.forEach(tab => {
+                    if (tab.id) {
+                        chrome.tabs.sendMessage(tab.id, {
+                            type: "NOTIFICATION_TIMER_UPDATE",
+                            position: changes.notificationPosition?.newValue || "bottom-right",
+                            timer: changes.notificationTimer?.newValue || 10000
+                        }).catch(() => {});
+                    }
+                });
+            });
+        }
+    }
+});

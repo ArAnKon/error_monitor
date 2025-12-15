@@ -6,12 +6,15 @@ let notificationPosition = "bottom-right";
 let filterByStatusCode = false;
 let selectedStatusCodes = [];
 let darkThemeEnabled = false;
+let notificationTimer = 10000;
 
+// Загрузка настроек из хранилища
 chrome.storage.local.get([
   "extensionEnabled",
   "errorHistory",
   "notificationPosition",
   "filterByStatusCode",
+  "notificationTimer",
   "selectedStatusCodes",
   "darkThemeEnabled"
 ], (result) => {
@@ -21,6 +24,9 @@ chrome.storage.local.get([
   }
   if (result.notificationPosition) {
     notificationPosition = result.notificationPosition;
+  }
+  if (result.notificationTimer) {
+    notificationTimer = parseInt(result.notificationTimer);
   }
   if (result.filterByStatusCode) {
     filterByStatusCode = result.filterByStatusCode;
@@ -43,6 +49,37 @@ function updateBodyTheme() {
   }
 }
 
+// Функция для скачивания cURL команды как файла
+function downloadCurlCommand(errorData) {
+  if (!errorData.details || !errorData.details.url) return;
+
+  const curlCommand = generateCurlCommand(errorData);
+
+  // Создаем Blob с текстом cURL
+  const blob = new Blob([curlCommand], { type: 'text/plain;charset=utf-8' });
+
+  // Создаем URL для Blob
+  const url = URL.createObjectURL(blob);
+
+  // Создаем временную ссылку для скачивания
+  const link = document.createElement('a');
+  link.href = url;
+
+  // Генерируем имя файла
+  const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+  const domain = errorData.domain || 'unknown';
+  link.download = `curl-${domain}-${timestamp}.txt`;
+
+  // Добавляем на страницу и кликаем
+  document.body.appendChild(link);
+  link.click();
+
+  // Убираем ссылку
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+
+// Функция для отображения уведомления
 function showNotification(errorData) {
   if (!extensionEnabled) return;
 
@@ -62,17 +99,12 @@ function showNotification(errorData) {
   const notification = document.createElement("div");
   notification.className = `error-notification ${errorData.type.toLowerCase()}-notification`;
 
-  // Применить тему к уведомления
+  // Добавляем класс для позиционирования
+  notification.classList.add(notificationPosition === "top-right" ? "top-right" : "bottom-right");
+
+  // Применить тему к уведомлениям
   if (darkThemeEnabled) {
     notification.classList.add("dark-theme");
-  }
-
-  if (notificationPosition === "top-right") {
-    notification.style.top = '20px';
-    notification.style.bottom = 'auto';
-  } else {
-    notification.style.bottom = '20px';
-    notification.style.top = 'auto';
   }
 
   let title = errorData.type === "CONSOLE_ERROR" ? "Console Error" : "Network Error";
@@ -139,10 +171,18 @@ function showNotification(errorData) {
   // Обработчик для кнопки cURL (только для сетевых ошибок)
   if (isNetworkError) {
     const copyCurlBtn = notification.querySelector('.copy-curl-btn');
-    copyCurlBtn.addEventListener('click', (e) => {
+    copyCurlBtn.addEventListener('click', async (e) => {
       e.stopPropagation();
-      copyCurl(errorData);
+
+      // Сначала копируем в буфер обмена
+      await copyCurl(errorData);
       notification.classList.add("copy-success");
+
+      // Затем скачиваем как файл
+      setTimeout(() => {
+        downloadCurlCommand(errorData);
+      }, 500);
+
       setTimeout(() => notification.classList.remove("copy-success"), 2000);
     });
   }
@@ -154,13 +194,30 @@ function showNotification(errorData) {
     captureScreenshotForError(errorData, notification);
   });
 
+  // Добавляем индикатор таймера, если время не равно 0
+  if (notificationTimer > 0) {
+    const timerBar = document.createElement('div');
+    timerBar.className = 'timer-bar';
+    timerBar.style.transition = `width ${notificationTimer}ms linear`;
+
+    notification.appendChild(timerBar);
+
+    // Запускаем анимацию таймера
+    setTimeout(() => {
+      timerBar.style.width = '0%';
+    }, 50);
+  }
+
   document.body.appendChild(notification);
   notificationStack.push(notification);
   updateNotificationPositions();
 
-  setTimeout(() => {
-    removeNotification(notification);
-  }, 10000);
+  // Устанавливаем таймер скрытия
+  if (notificationTimer > 0) {
+    setTimeout(() => {
+      removeNotification(notification);
+    }, notificationTimer);
+  }
 }
 
 // Функция для создания скриншота для ошибки
@@ -171,7 +228,7 @@ async function captureScreenshotForError(errorData, notification) {
     screenshotBtn.textContent = '📸 Создание...';
     screenshotBtn.disabled = true;
 
-    // Запрашиваем скриншот через background script!!!!!!
+    // Запрашиваем скриншот через background script
     const screenshotDataUrl = await new Promise((resolve) => {
       chrome.runtime.sendMessage(
           { type: "CAPTURE_SCREENSHOT" },
@@ -266,50 +323,103 @@ function openErrorDetails(errorData) {
   });
 }
 
+// Обновление позиций всех уведомлений
 function updateNotificationPositions() {
   const spacing = 10;
 
+  // Сначала удаляем все уведомления со страницы
+  notificationStack.forEach(notification => {
+    if (notification.parentElement) {
+      notification.remove();
+    }
+  });
+
+  // Затем добавляем их обратно в правильном порядке
   if (notificationPosition === "top-right") {
     let currentTop = 20;
-    notificationStack.forEach((notification) => {
+
+    // Идем с конца, чтобы новые уведомления были сверху
+    for (let i = notificationStack.length - 1; i >= 0; i--) {
+      const notification = notificationStack[i];
+
+      // Обновляем класс позиционирования
+      notification.className = `error-notification ${notification.classList.contains('console-notification') ? 'console-notification' : 'network-notification'} top-right`;
+      if (darkThemeEnabled) {
+        notification.classList.add("dark-theme");
+      }
+
+      // Устанавливаем позицию
       notification.style.top = `${currentTop}px`;
+      notification.style.right = '20px';
       notification.style.bottom = 'auto';
+      notification.style.left = 'auto';
+
+      // Добавляем обратно на страницу
+      document.body.appendChild(notification);
+
+      // Увеличиваем отступ для следующего уведомления
       currentTop += notification.offsetHeight + spacing;
-    });
+    }
   } else {
     let currentBottom = 20;
-    notificationStack.forEach((notification) => {
+
+    // Идем с начала, чтобы новые уведомления были снизу
+    for (let i = 0; i < notificationStack.length; i++) {
+      const notification = notificationStack[i];
+
+      // Обновляем класс позиционирования
+      notification.className = `error-notification ${notification.classList.contains('console-notification') ? 'console-notification' : 'network-notification'} bottom-right`;
+      if (darkThemeEnabled) {
+        notification.classList.add("dark-theme");
+      }
+
+      // Устанавливаем позицию
       notification.style.bottom = `${currentBottom}px`;
+      notification.style.right = '20px';
       notification.style.top = 'auto';
+      notification.style.left = 'auto';
+
+      // Добавляем обратно на страницу
+      document.body.appendChild(notification);
+
+      // Увеличиваем отступ для следующего уведомления
       currentBottom += notification.offsetHeight + spacing;
-    });
+    }
   }
 }
 
+// Удаление уведомления
 function removeNotification(notification) {
   const index = notificationStack.indexOf(notification);
   if (index > -1) {
+    // Добавляем класс для анимации скрытия
+    notification.classList.add('fade-out');
+
+    // Удаляем из стека
     notificationStack.splice(index, 1);
-    notification.style.opacity = '0';
-    notification.style.transform = 'translateX(100%)';
+
+    // Ждем завершения анимации и удаляем элемент
     setTimeout(() => {
       if (notification.parentElement) {
         notification.remove();
       }
+      // Обновляем позиции оставшихся уведомлений
       updateNotificationPositions();
     }, 300);
   }
 }
 
+// Генерация ID
 function generateId() {
   return Date.now().toString(36) + Math.random().toString(36).substr(2);
 }
 
+// Копирование cURL в буфер обмена
 function copyCurl(errorData) {
   if (!errorData.details || !errorData.details.url) return;
   const curlCommand = generateCurlCommand(errorData);
   if (navigator.clipboard) {
-    navigator.clipboard.writeText(curlCommand).then(() => {
+    return navigator.clipboard.writeText(curlCommand).then(() => {
       console.log('cURL команда скопирована в буфер обмена');
     }).catch(err => {
       console.error('Ошибка копирования cURL:', err);
@@ -331,9 +441,11 @@ function copyCurl(errorData) {
     } finally {
       document.body.removeChild(textArea);
     }
+    return Promise.resolve();
   }
 }
 
+// Генерация cURL команды
 function generateCurlCommand(error) {
   if (!error.details || !error.details.url) return '# cURL не доступен для этой ошибки';
   const url = error.details.url;
@@ -342,6 +454,7 @@ function generateCurlCommand(error) {
   return `curl -X ${method} "${url}" \\\n  -H "Accept: */*" \\\n  -H "Origin: ${origin}" \\\n  -H "Referer: ${error.tabUrl || window.location.href}" \\\n  --compressed \\\n  --insecure`;
 }
 
+// Обработка ошибки
 function handleError(errorData) {
   currentTabErrors.push(errorData);
   errorHistory.push(errorData);
@@ -368,17 +481,14 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     return;
   }
 
-  if (request.type === "NOTIFICATION_POSITION_UPDATE") {
+  if (request.type === "NOTIFICATION_SETTINGS_UPDATE") {
     notificationPosition = request.position;
-    notificationStack.forEach(notification => {
-      if (notification.parentElement) {
-        notification.remove();
-      }
-    });
-    notificationStack = [];
-    currentTabErrors.forEach(error => {
-      showNotification(error);
-    });
+    if (request.timer !== undefined) {
+      notificationTimer = parseInt(request.timer);
+    }
+
+    // Обновляем позиции существующих уведомлений
+    updateNotificationPositions();
     return;
   }
 
@@ -386,6 +496,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     filterByStatusCode = request.filterEnabled;
     selectedStatusCodes = request.selectedStatusCodes || [];
 
+    // Удаляем все текущие уведомления
     notificationStack.forEach(notification => {
       if (notification.parentElement) {
         notification.remove();
@@ -393,6 +504,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     });
     notificationStack = [];
 
+    // Показываем только те ошибки, которые соответствуют фильтру
     currentTabErrors.forEach(error => {
       if (error.type === "CONSOLE_ERROR") {
         showNotification(error);
@@ -416,7 +528,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     darkThemeEnabled = request.darkThemeEnabled;
     updateBodyTheme();
 
-    // Если меняекм тему при уже существующих нотификациях
+    // Обновляем тему у существующих уведомлений
     notificationStack.forEach(notification => {
       if (darkThemeEnabled) {
         notification.classList.add("dark-theme");
@@ -445,6 +557,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   }
 });
 
+// Перехват console.error
 const originalError = console.error;
 console.error = function (...args) {
   originalError.apply(console, args);
@@ -460,6 +573,7 @@ console.error = function (...args) {
   handleError(errorData);
 };
 
+// Перехват ошибок window
 window.addEventListener("error", (event) => {
   if (!extensionEnabled) return;
   const errorData = {
@@ -473,6 +587,7 @@ window.addEventListener("error", (event) => {
   handleError(errorData);
 });
 
+// Перехват необработанных промисов
 window.addEventListener("unhandledrejection", (event) => {
   if (!extensionEnabled) return;
   const errorData = {
@@ -486,6 +601,7 @@ window.addEventListener("unhandledrejection", (event) => {
   handleError(errorData);
 });
 
+// Глобальный объект для доступа из popup
 window.errorMonitor = {
   getCurrentErrors: () => currentTabErrors,
   getErrorHistory: () => errorHistory,
