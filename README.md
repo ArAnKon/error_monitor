@@ -75,9 +75,6 @@
 #### Копирование cURL
 <img src="https://github.com/ArAnKon/error_monitor/blob/d87de364be684f426df816d8e4b657f390da9dec/demonstration/copy_curl.png" width="400" alt="Копирование cURL"/>
 
-#### Шаги воспроизведения
-<img src="https://github.com/ArAnKon/error_monitor/blob/2d7fab77de070ee7331bca9a2aafb49ffcf51fe9/demonstration/steps.png" width="500" alt="Шаги воспроизведения">
-
 </div>
 
 ## 📦 Установка
