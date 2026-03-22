@@ -312,13 +312,13 @@ function showErrorDetail(error) {
         document.getElementById('curlCommand').textContent = curlCommand;
         document.getElementById('copyCurl').dataset.curl = curlCommand;
 
-        // обработчик для кнопки копирования cURL
+        // Обновляем обработчик для кнопки копирования cURL
         document.getElementById('copyCurl').onclick = () => {
             // Копируем в буфер обмена
             navigator.clipboard.writeText(curlCommand).then(() => {
                 showSuccessMessage('cURL скопирован в буфер обмена!');
 
-                // Скачка как .txt файл через 500мс
+                // Автоматически скачиваем как .txt файл через 500мс
                 setTimeout(() => {
                     downloadCurl();
                 }, 500);
@@ -331,6 +331,54 @@ function showErrorDetail(error) {
         networkSection.classList.add('hidden');
         curlButton.classList.add('hidden');
         curlPreview.classList.add('hidden');
+    }
+
+    // Добавляем секцию с шагами воспроизведения, если они есть
+    addReproductionStepsSection(error);
+}
+
+// Новая функция для добавления секции с шагами воспроизведения
+function addReproductionStepsSection(error) {
+    const detailContent = document.querySelector('.detail-content');
+
+    // Удаляем существующую секцию если есть
+    const existingStepsSection = document.getElementById('reproductionStepsSection');
+    if (existingStepsSection) {
+        existingStepsSection.remove();
+    }
+
+    // Проверяем есть ли шаги воспроизведения
+    if (error.reproductionSteps &&
+        error.reproductionSteps !== 'Не удалось автоматически определить шаги воспроизведения.') {
+
+        const stepsSection = document.createElement('div');
+        stepsSection.id = 'reproductionStepsSection';
+        stepsSection.className = 'detail-section';
+
+        stepsSection.innerHTML = `
+            <label>Шаги воспроизведения</label>
+            <div class="reproduction-steps">
+                <pre class="steps-content">${error.reproductionSteps}</pre>
+            </div>
+            <button id="copySteps" class="action-button copy-steps-button" 
+                    title="Скопировать шаги воспроизведения">
+                📋 Скопировать шаги
+            </button>
+        `;
+
+        // Вставляем после секции с сообщением об ошибке
+        const messageSection = document.getElementById('detailMessage').parentElement;
+        detailContent.insertBefore(stepsSection, messageSection.nextSibling);
+
+        // Добавляем обработчик для кнопки копирования
+        document.getElementById('copySteps').addEventListener('click', () => {
+            navigator.clipboard.writeText(error.reproductionSteps).then(() => {
+                showSuccessMessage('Шаги воспроизведения скопированы!');
+            }).catch(err => {
+                console.error('Failed to copy steps:', err);
+                showSuccessMessage('Ошибка копирования шагов');
+            });
+        });
     }
 }
 
@@ -440,7 +488,7 @@ function copyErrorDetails() {
     const error = window.currentErrorDetail;
     if (!error) return;
 
-    const details = `
+    let details = `
 Тип: ${error.type === 'CONSOLE_ERROR' ? 'Console Error' : 'Network Error'}
 Время: ${formatDetailedTime(error.timestamp)}
 URL страницы: ${error.tabUrl || 'N/A'}
@@ -454,6 +502,12 @@ ${error.details ? `
 ` : ''}
 ${error.hasScreenshot ? 'Есть скриншот: Да' : 'Есть скриншот: Нет'}
     `.trim();
+
+    // Добавляем шаги воспроизведения если они есть
+    if (error.reproductionSteps &&
+        error.reproductionSteps !== 'Не удалось автоматически определить шаги воспроизведения.') {
+        details += `\n\nШаги воспроизведения:\n${error.reproductionSteps}`;
+    }
 
     navigator.clipboard.writeText(details).then(() => {
         showSuccessMessage('Детали ошибки скопированы!');

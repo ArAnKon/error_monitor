@@ -914,3 +914,46 @@ body.dark-theme .screenshot-button:hover {
         padding-left: 25px !important;
     }
 }
+
+/* Добавим в конец файла */
+
+.reproduction-steps {
+    background: var(--bg-color);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius);
+    padding: 12px;
+    margin-top: 8px;
+    max-height: 200px;
+    overflow-y: auto;
+    font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
+    font-size: 12px;
+    line-height: 1.4;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.steps-content {
+    margin: 0;
+    padding: 0;
+    font-family: inherit;
+    font-size: inherit;
+    line-height: inherit;
+}
+
+.copy-steps-button {
+    margin-top: 10px;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+}
+
+.copy-steps-button:hover {
+    background: var(--bg-color);
+    border-color: var(--success-color);
+    color: var(--success-color);
+}
+
+.dark-theme .reproduction-steps {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: var(--border-color);
+}
