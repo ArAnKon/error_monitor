@@ -150,9 +150,17 @@ body {
     margin-bottom: 2px;
 }
 
-.stat-card.total .stat-number { color: var(--primary-color); }
-.stat-card.console .stat-number { color: var(--console-color); }
-.stat-card.network .stat-number { color: var(--network-color); }
+.stat-card.total .stat-number {
+    color: var(--primary-color);
+}
+
+.stat-card.console .stat-number {
+    color: var(--console-color);
+}
+
+.stat-card.network .stat-number {
+    color: var(--network-color);
+}
 
 .stat-label {
     font-size: 10px;

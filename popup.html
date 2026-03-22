@@ -1,140 +1,140 @@
 <!doctype html>
 <html>
 <head>
-  <meta charset="utf-8" />
-  <link rel="stylesheet" href="styles/popup.css" />
+    <meta charset="utf-8"/>
+    <link rel="stylesheet" href="styles/popup.css"/>
 </head>
 <body>
 <div class="popup-container">
-  <div class="header">
-    <h3>Перехватчик ошибок</h3>
-    <div class="header-controls">
-      <label class="switch">
-        <input type="checkbox" id="toggleExtension" checked>
-        <span class="slider round"></span>
-      </label>
-      <span id="totalCount">0</span>
-    </div>
-  </div>
-
-  <div class="content-section">
-    <!-- СТАТИСТИКА -->
-    <div class="stats-grid">
-      <div class="stat-card total">
-        <div class="stat-number" id="totalCount">0</div>
-        <div class="stat-label">Всего</div>
-      </div>
-      <div class="stat-card console">
-        <div class="stat-number" id="errorCount">0</div>
-        <div class="stat-label">Console</div>
-      </div>
-      <div class="stat-card network">
-        <div class="stat-number" id="networkCount">0</div>
-        <div class="stat-label">Network</div>
-      </div>
-    </div>
-
-    <!-- НАСТРОЙКИ -->
-    <div class="settings-section">
-      <!-- ПЕРЕКЛЮЧАТЕЛЬ ТЕМЫ -->
-      <div class="setting-item">
-        <label class="checkbox-label">
-          <input type="checkbox" id="toggleTheme">
-          <span class="checkbox-custom"></span>
-          🌙 Тёмная тема
-        </label>
-      </div>
-
-      <div class="setting-item">
-        <label for="notificationPosition">Положение уведомлений:</label>
-        <select id="notificationPosition">
-          <option value="bottom-right">Справа снизу</option>
-          <option value="top-right">Справа сверху</option>
-        </select>
-      </div>
-
-
-      <!-- НАСТРОЙКИ ТАЙМЕРА -->
-      <div class="setting-item">
-        <label for="notificationTimer">Время показа уведомлений:</label>
-        <select id="notificationTimer">
-          <option value="5000">5 секунд</option>
-          <option value="10000">10 секунд</option>
-          <option value="15000">15 секунд</option>
-          <option value="20000">20 секунд</option>
-          <option value="30000">30 секунд</option>
-          <option value="60000">1 минута</option>
-          <option value="0">Не скрывать</option>
-        </select>
-      </div>
-
-      <!-- ОСНОВНОЙ ЧЕКБОКС ФИЛЬТРА -->
-      <div class="setting-item">
-        <label class="checkbox-label">
-          <input type="checkbox" id="filterByStatusCode">
-          <span class="checkbox-custom"></span>
-          Фильтровать ошибки по статус-кодам
-        </label>
-      </div>
-
-      <!-- СЕКЦИЯ СТАТУС-КОДОВ (появляется при включении фильтра) -->
-      <div class="status-codes-section" id="statusCodesSection">
-        <div class="status-codes-grid">
-          <label class="checkbox-label small">
-            <input type="checkbox" value="400" class="status-code-checkbox">
-            <span class="checkbox-custom"></span>
-            400
-          </label>
-          <label class="checkbox-label small">
-            <input type="checkbox" value="401" class="status-code-checkbox">
-            <span class="checkbox-custom"></span>
-            401
-          </label>
-          <label class="checkbox-label small">
-            <input type="checkbox" value="403" class="status-code-checkbox">
-            <span class="checkbox-custom"></span>
-            403
-          </label>
-          <label class="checkbox-label small">
-            <input type="checkbox" value="404" class="status-code-checkbox">
-            <span class="checkbox-custom"></span>
-            404
-          </label>
-          <label class="checkbox-label small">
-            <input type="checkbox" value="500" class="status-code-checkbox">
-            <span class="checkbox-custom"></span>
-            500
-          </label>
-          <label class="checkbox-label small">
-            <input type="checkbox" value="502" class="status-code-checkbox">
-            <span class="checkbox-custom"></span>
-            502
-          </label>
-          <label class="checkbox-label small">
-            <input type="checkbox" value="503" class="status-code-checkbox">
-            <span class="checkbox-custom"></span>
-            503
-          </label>
-          <label class="checkbox-label small">
-            <input type="checkbox" value="0" class="status-code-checkbox">
-            <span class="checkbox-custom"></span>
-            Network Errors (без статус-кода)
-          </label>
+    <div class="header">
+        <h3>Перехватчик ошибок</h3>
+        <div class="header-controls">
+            <label class="switch">
+                <input type="checkbox" id="toggleExtension" checked>
+                <span class="slider round"></span>
+            </label>
+            <span id="totalCount">0</span>
         </div>
-      </div>
     </div>
 
-    <!-- КНОПКИ ДЕЙСТВИЙ -->
-    <div class="buttons-grid">
-      <button id="clearAll" class="full-width">🗑️ Очистить текущие</button>
-      <button id="captureScreenshot" class="full-width">📸 Сделать скриншот</button>
-      <button id="showHistory">📊 История</button>
-      <button id="exportHistory">📤 Экспорт</button>
-      <button id="clearHistory" class="danger full-width">⚠️ Очистить историю</button>
-      <button id="testError">🛠️ Тест ошибки</button>
-      <button id="testNetwork">🌐 Тест сети</button>
+    <div class="content-section">
+        <!-- СТАТИСТИКА -->
+        <div class="stats-grid">
+            <div class="stat-card total">
+                <div class="stat-number" id="totalCount">0</div>
+                <div class="stat-label">Всего</div>
+            </div>
+            <div class="stat-card console">
+                <div class="stat-number" id="errorCount">0</div>
+                <div class="stat-label">Console</div>
+            </div>
+            <div class="stat-card network">
+                <div class="stat-number" id="networkCount">0</div>
+                <div class="stat-label">Network</div>
+            </div>
+        </div>
+
+        <!-- НАСТРОЙКИ -->
+        <div class="settings-section">
+            <!-- ПЕРЕКЛЮЧАТЕЛЬ ТЕМЫ -->
+            <div class="setting-item">
+                <label class="checkbox-label">
+                    <input type="checkbox" id="toggleTheme">
+                    <span class="checkbox-custom"></span>
+                    🌙 Тёмная тема
+                </label>
+            </div>
+
+            <div class="setting-item">
+                <label for="notificationPosition">Положение уведомлений:</label>
+                <select id="notificationPosition">
+                    <option value="bottom-right">Справа снизу</option>
+                    <option value="top-right">Справа сверху</option>
+                </select>
+            </div>
+
+
+            <!-- НАСТРОЙКИ ТАЙМЕРА -->
+            <div class="setting-item">
+                <label for="notificationTimer">Время показа уведомлений:</label>
+                <select id="notificationTimer">
+                    <option value="5000">5 секунд</option>
+                    <option value="10000">10 секунд</option>
+                    <option value="15000">15 секунд</option>
+                    <option value="20000">20 секунд</option>
+                    <option value="30000">30 секунд</option>
+                    <option value="60000">1 минута</option>
+                    <option value="0">Не скрывать</option>
+                </select>
+            </div>
+
+            <!-- ОСНОВНОЙ ЧЕКБОКС ФИЛЬТРА -->
+            <div class="setting-item">
+                <label class="checkbox-label">
+                    <input type="checkbox" id="filterByStatusCode">
+                    <span class="checkbox-custom"></span>
+                    Фильтровать ошибки по статус-кодам
+                </label>
+            </div>
+
+            <!-- СЕКЦИЯ СТАТУС-КОДОВ (появляется при включении фильтра) -->
+            <div class="status-codes-section" id="statusCodesSection">
+                <div class="status-codes-grid">
+                    <label class="checkbox-label small">
+                        <input type="checkbox" value="400" class="status-code-checkbox">
+                        <span class="checkbox-custom"></span>
+                        400
+                    </label>
+                    <label class="checkbox-label small">
+                        <input type="checkbox" value="401" class="status-code-checkbox">
+                        <span class="checkbox-custom"></span>
+                        401
+                    </label>
+                    <label class="checkbox-label small">
+                        <input type="checkbox" value="403" class="status-code-checkbox">
+                        <span class="checkbox-custom"></span>
+                        403
+                    </label>
+                    <label class="checkbox-label small">
+                        <input type="checkbox" value="404" class="status-code-checkbox">
+                        <span class="checkbox-custom"></span>
+                        404
+                    </label>
+                    <label class="checkbox-label small">
+                        <input type="checkbox" value="500" class="status-code-checkbox">
+                        <span class="checkbox-custom"></span>
+                        500
+                    </label>
+                    <label class="checkbox-label small">
+                        <input type="checkbox" value="502" class="status-code-checkbox">
+                        <span class="checkbox-custom"></span>
+                        502
+                    </label>
+                    <label class="checkbox-label small">
+                        <input type="checkbox" value="503" class="status-code-checkbox">
+                        <span class="checkbox-custom"></span>
+                        503
+                    </label>
+                    <label class="checkbox-label small">
+                        <input type="checkbox" value="0" class="status-code-checkbox">
+                        <span class="checkbox-custom"></span>
+                        Network Errors (без статус-кода)
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <!-- КНОПКИ ДЕЙСТВИЙ -->
+        <div class="buttons-grid">
+            <button id="clearAll" class="full-width">🗑️ Очистить текущие</button>
+            <button id="captureScreenshot" class="full-width">📸 Сделать скриншот</button>
+            <button id="showHistory">📊 История</button>
+            <button id="exportHistory">📤 Экспорт</button>
+            <button id="clearHistory" class="danger full-width">⚠️ Очистить историю</button>
+            <button id="testError">🛠️ Тест ошибки</button>
+            <button id="testNetwork">🌐 Тест сети</button>
+        </div>
     </div>
-  </div>
 </div>
 
 <script src="popup.js"></script>

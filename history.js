@@ -2,14 +2,14 @@ let allHistory = [];
 let filteredHistory = [];
 let darkThemeEnabled = false;
 
-// Инициализация
+
 document.addEventListener('DOMContentLoaded', () => {
     loadThemeSettings();
     loadHistory();
     setupEventListeners();
 });
 
-// Загрузка истории из chrome.storage
+
 function loadHistory() {
     chrome.storage.local.get(["errorHistory", "errorToShowInHistory", "openHistoryOnLoad"], (result) => {
         if (result.errorHistory) {
@@ -18,13 +18,13 @@ function loadHistory() {
             renderHistory();
             updateStats();
 
-            // Автоматически открываем детали ошибки если нужно
+
             if (result.openHistoryOnLoad && result.errorToShowInHistory) {
                 const errorToShow = allHistory.find(error => error.id === result.errorToShowInHistory);
                 if (errorToShow) {
                     setTimeout(() => {
                         showErrorDetail(errorToShow);
-                        // Очищаем флаги после открытия
+
                         chrome.storage.local.remove(['errorToShowInHistory', 'openHistoryOnLoad']);
                     }, 500);
                 }
@@ -35,7 +35,7 @@ function loadHistory() {
     });
 }
 
-// Настройка обработчиков событий
+
 function setupEventListeners() {
     document.getElementById('backButton').addEventListener('click', () => {
         window.close();
@@ -52,7 +52,7 @@ function setupEventListeners() {
     document.getElementById('copyDetails').addEventListener('click', copyErrorDetails);
 }
 
-// Соответствует ли ошибка фильтру времени
+
 function matchesTimeFilter(error, timeFilter) {
     if (timeFilter === 'all') return true;
 
@@ -83,7 +83,7 @@ function matchesTimeFilter(error, timeFilter) {
     }
 }
 
-// Применение фильтров
+
 function applyFilters() {
     const typeFilter = document.getElementById('typeFilter').value;
     const timeFilter = document.getElementById('timeFilter').value;
@@ -91,17 +91,17 @@ function applyFilters() {
     const searchText = document.getElementById('searchInput').value.toLowerCase();
 
     filteredHistory = allHistory.filter(error => {
-        // Фильтр по типу
+
         if (typeFilter !== 'all' && error.type !== typeFilter) {
             return false;
         }
 
-        // Фильтр по времени
+
         if (!matchesTimeFilter(error, timeFilter)) {
             return false;
         }
 
-        // Фильтр по статус коду (только для сетевых ошибок)
+
         if (statusFilter !== 'all' && error.type === 'NETWORK_ERROR') {
             const statusCode = error.details?.statusCode;
 
@@ -113,18 +113,18 @@ function applyFilters() {
                     if (!statusCode || statusCode < 500) return false;
                     break;
                 case 'network-error':
-                    // Строгая проверка: статус-код должен быть 0 или отсутствовать
+
                     if (statusCode !== 0 && statusCode !== undefined) return false;
                     break;
                 default:
-                    // Если выбран конкретный статус-код
+
                     if (statusFilter !== 'all' && statusCode !== parseInt(statusFilter)) {
                         return false;
                     }
             }
         }
 
-        // Поиск по сообщению
+
         if (searchText && !error.message.toLowerCase().includes(searchText)) {
             return false;
         }
@@ -136,7 +136,7 @@ function applyFilters() {
     updateStats();
 }
 
-// Группировка ошибок по дням
+
 function groupErrorsByDay(errors) {
     const groups = {};
 
@@ -157,7 +157,7 @@ function groupErrorsByDay(errors) {
     return groups;
 }
 
-// Форматирование даты для отображения
+
 function formatDateDisplay(dateString) {
     try {
         const date = new Date(dateString);
@@ -186,7 +186,7 @@ function formatDateDisplay(dateString) {
     }
 }
 
-// Рендер списка истории с группировкой по дням
+
 function renderHistory() {
     const listElement = document.getElementById('historyList');
 
@@ -195,7 +195,7 @@ function renderHistory() {
         return;
     }
 
-    // Группировка по дням
+
     const groupedErrors = groupErrorsByDay(filteredHistory);
 
     let html = '';
@@ -242,7 +242,7 @@ function renderHistory() {
 
     listElement.innerHTML = html;
 
-    // Обработчики клика
+
     document.querySelectorAll('.error-item').forEach(item => {
         item.addEventListener('click', () => {
             const dateKey = item.dataset.date;
@@ -254,7 +254,7 @@ function renderHistory() {
     });
 }
 
-// Получение индикатора статуса для сетевых ошибок
+
 function getStatusIndicator(statusCode, errorType) {
     if (errorType !== 'NETWORK_ERROR' || !statusCode) return '';
 
@@ -273,12 +273,12 @@ function getStatusIndicator(statusCode, errorType) {
     return statusClass ? `<span class="status-indicator ${statusClass}">${statusText}</span>` : '';
 }
 
-// Показать детали ошибки
+
 function showErrorDetail(error) {
     document.getElementById('historyList').classList.add('hidden');
     document.getElementById('errorDetail').classList.remove('hidden');
 
-    // Заполнение деталей
+
     document.getElementById('detailType').textContent = error.type === 'CONSOLE_ERROR' ? 'Console Error' : 'Network Error';
     document.getElementById('detailType').className = `detail-type ${error.type === 'CONSOLE_ERROR' ? 'console' : 'network'}`;
 
@@ -286,13 +286,13 @@ function showErrorDetail(error) {
     document.getElementById('detailUrl').textContent = error.tabUrl || 'N/A';
     document.getElementById('detailMessage').textContent = error.message;
 
-    // Сохранение текущей ошибки
+
     window.currentErrorDetail = error;
 
-    // Загрузка скриншота
+
     loadScreenshotForError(error);
 
-    // Детали для сетевых ошибок
+
     const networkSection = document.getElementById('networkDetails');
     const curlButton = document.getElementById('copyCurl');
     const curlPreview = document.getElementById('curlPreview');
@@ -307,18 +307,18 @@ function showErrorDetail(error) {
         document.getElementById('detailStatusCode').textContent = error.details.statusCode || 'N/A';
         document.getElementById('detailRequestType').textContent = error.details.type || 'N/A';
 
-        // Генерация cURL
+
         const curlCommand = generateCurlCommand(error);
         document.getElementById('curlCommand').textContent = curlCommand;
         document.getElementById('copyCurl').dataset.curl = curlCommand;
 
-        // Обновляем обработчик для кнопки копирования cURL
+
         document.getElementById('copyCurl').onclick = () => {
-            // Копируем в буфер обмена
+
             navigator.clipboard.writeText(curlCommand).then(() => {
                 showSuccessMessage('cURL скопирован в буфер обмена!');
 
-                // Автоматически скачиваем как .txt файл через 500мс
+
                 setTimeout(() => {
                     downloadCurl();
                 }, 500);
@@ -333,21 +333,21 @@ function showErrorDetail(error) {
         curlPreview.classList.add('hidden');
     }
 
-    // Добавляем секцию с шагами воспроизведения, если они есть
+
     addReproductionStepsSection(error);
 }
 
-// Новая функция для добавления секции с шагами воспроизведения
+
 function addReproductionStepsSection(error) {
     const detailContent = document.querySelector('.detail-content');
 
-    // Удаляем существующую секцию если есть
+
     const existingStepsSection = document.getElementById('reproductionStepsSection');
     if (existingStepsSection) {
         existingStepsSection.remove();
     }
 
-    // Проверяем есть ли шаги воспроизведения
+
     if (error.reproductionSteps &&
         error.reproductionSteps !== 'Не удалось автоматически определить шаги воспроизведения.') {
 
@@ -366,11 +366,11 @@ function addReproductionStepsSection(error) {
             </button>
         `;
 
-        // Вставляем после секции с сообщением об ошибке
+
         const messageSection = document.getElementById('detailMessage').parentElement;
         detailContent.insertBefore(stepsSection, messageSection.nextSibling);
 
-        // Добавляем обработчик для кнопки копирования
+
         document.getElementById('copySteps').addEventListener('click', () => {
             navigator.clipboard.writeText(error.reproductionSteps).then(() => {
                 showSuccessMessage('Шаги воспроизведения скопированы!');
@@ -395,11 +395,11 @@ function setupEventListeners() {
 
     document.getElementById('clearHistory').addEventListener('click', clearHistory);
     document.getElementById('backToList').addEventListener('click', showList);
-    // Убираем старый обработчик для copyCurl, так как он теперь устанавливается динамически
+
     document.getElementById('copyDetails').addEventListener('click', copyErrorDetails);
 }
 
-// Загрузка скриншота для ошибки
+
 function loadScreenshotForError(error) {
     const screenshotSection = document.getElementById('screenshotSection');
     const noScreenshotSection = document.getElementById('noScreenshot');
@@ -415,13 +415,13 @@ function loadScreenshotForError(error) {
     }
 }
 
-// Показать список
+
 function showList() {
     document.getElementById('errorDetail').classList.add('hidden');
     document.getElementById('historyList').classList.remove('hidden');
 }
 
-// Генерация cURL команды
+
 function generateCurlCommand(error) {
     if (!error.details || !error.details.url) return 'cURL не доступен для этой ошибки';
 
@@ -437,7 +437,7 @@ function generateCurlCommand(error) {
   --insecure`;
 }
 
-// Копирование cURL
+
 function copyCurl() {
     const curlCommand = document.getElementById('copyCurl').dataset.curl;
 
@@ -457,33 +457,33 @@ function downloadCurl() {
         return;
     }
 
-    // Создаем Blob с текстом cURL
-    const blob = new Blob([curlCommand], { type: 'text/plain;charset=utf-8' });
 
-    // Создаем URL для Blob
+    const blob = new Blob([curlCommand], {type: 'text/plain;charset=utf-8'});
+
+
     const url = URL.createObjectURL(blob);
 
-    // Создаем временную ссылку для скачивания
+
     const link = document.createElement('a');
     link.href = url;
 
-    // Генерируем имя файла с датой
+
     const now = new Date();
     const timestamp = now.toISOString().replace(/[:.]/g, '-').split('T')[0];
     link.download = `curl-command-${timestamp}.txt`;
 
-    // Добавляем на страницу и кликаем
+
     document.body.appendChild(link);
     link.click();
 
-    // Убираем ссылку и освобождаем память
+
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
 
     showSuccessMessage('cURL команда скачана как .txt файл!');
 }
 
-// Копирование деталей ошибки
+
 function copyErrorDetails() {
     const error = window.currentErrorDetail;
     if (!error) return;
@@ -503,7 +503,7 @@ ${error.details ? `
 ${error.hasScreenshot ? 'Есть скриншот: Да' : 'Есть скриншот: Нет'}
     `.trim();
 
-    // Добавляем шаги воспроизведения если они есть
+
     if (error.reproductionSteps &&
         error.reproductionSteps !== 'Не удалось автоматически определить шаги воспроизведения.') {
         details += `\n\nШаги воспроизведения:\n${error.reproductionSteps}`;
@@ -517,7 +517,7 @@ ${error.hasScreenshot ? 'Есть скриншот: Да' : 'Есть скрин
     });
 }
 
-// Обновление статистики
+
 function updateStats() {
     const total = filteredHistory.length;
     const consoleCount = filteredHistory.filter(e => e.type === 'CONSOLE_ERROR').length;
@@ -528,7 +528,7 @@ function updateStats() {
     document.getElementById('networkCount').textContent = networkCount;
 }
 
-// Очистка истории
+
 function clearHistory() {
     if (confirm('Вы уверены, что хотите очистить всю историю ошибок?')) {
         chrome.storage.local.remove('errorHistory', () => {
@@ -541,7 +541,7 @@ function clearHistory() {
     }
 }
 
-// Показать пустое состояние
+
 function showEmptyState() {
     document.getElementById('historyList').innerHTML = `
     <div class="empty-state">
@@ -550,7 +550,7 @@ function showEmptyState() {
   `;
 }
 
-// Показать сообщение об успехе
+
 function showSuccessMessage(message) {
     const existingMessage = document.querySelector('.success-message');
     if (existingMessage) {
@@ -567,10 +567,10 @@ function showSuccessMessage(message) {
     }, 2000);
 }
 
-// Вспомогательные функции
+
 function formatTime(timestamp) {
     try {
-        // Если timestamp уже является объектом Date
+
         if (timestamp instanceof Date) {
             return timestamp.toLocaleTimeString('ru-RU', {
                 hour: '2-digit',
@@ -578,7 +578,7 @@ function formatTime(timestamp) {
             });
         }
 
-        // Если это ISO строка или число
+
         const date = new Date(timestamp);
         if (!isNaN(date.getTime())) {
             return date.toLocaleTimeString('ru-RU', {
@@ -595,7 +595,7 @@ function formatTime(timestamp) {
 
 function formatDetailedTime(timestamp) {
     try {
-        // Если timestamp уже является объектом Date
+
         if (timestamp instanceof Date) {
             return timestamp.toLocaleString('ru-RU', {
                 day: 'numeric',
@@ -606,7 +606,7 @@ function formatDetailedTime(timestamp) {
             });
         }
 
-        // Если это ISO строка или число
+
         const date = new Date(timestamp);
         if (!isNaN(date.getTime())) {
             return date.toLocaleString('ru-RU', {
@@ -636,7 +636,7 @@ function loadThemeSettings() {
     });
 }
 
-// Обновление темы
+
 function updateTheme(isDark) {
     if (isDark) {
         document.body.classList.add("dark-theme");

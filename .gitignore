@@ -1,0 +1,47 @@
+# JetBrains IDE
+.idea/
+*.iws
+*.iml
+*.ipr
+
+# WebStorm специфичные
+.idea/workspace.xml
+.idea/tasks.xml
+.idea/dictionaries
+.idea/usage.statistics.xml
+.idea/caches/
+.idea/shelf/
+.idea/.name
+
+# Плагины
+.idea/plugins/
+
+# Модули
+*.iml
+modules.xml
+
+# Настройки инспекций
+.idea/inspectionProfiles/
+.idea/scopes/
+
+# Настройки экспорта
+.idea/dataSources.ids
+.idea/dataSources.xml
+.idea/sqlDataSources.xml
+.idea/dynamic.xml
+
+# Файлы запуска/отладки
+.idea/runConfigurations/
+
+# Файлы покрытия кода
+.idea/codeStyles/
+.idea/codeStyles/codeStyleConfig.xml
+
+# Файлы истории
+.idea/find.xml
+
+# Файлы VCS
+.idea/vcs.xml
+
+# Файлы миграций
+.idea/migrations.xml
