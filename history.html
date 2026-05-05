@@ -15,7 +15,6 @@
         </div>
     </div>
 
-
     <div class="stats-grid">
         <div class="stat-card total">
             <div class="stat-number" id="totalCount">0</div>
@@ -30,7 +29,6 @@
             <div class="stat-label">Network Errors</div>
         </div>
     </div>
-
 
     <div class="filters-container">
         <div class="filters-row">
@@ -69,13 +67,10 @@
         </div>
     </div>
 
-
     <div class="history-content">
         <div id="historyList">
-
         </div>
     </div>
-
 
     <div id="errorDetail" class="error-detail hidden">
         <div class="detail-modal">
@@ -105,7 +100,6 @@
                     <div id="detailMessage" class="detail-message"></div>
                 </div>
 
-
                 <div id="screenshotSection" class="detail-section hidden">
                     <label>Скриншот страницы</label>
                     <div class="screenshot-container">
@@ -119,7 +113,6 @@
                         Скриншот не был сделан для этой ошибки
                     </div>
                 </div>
-
 
                 <div id="networkDetails" class="detail-section hidden">
                     <label>Детали сетевого запроса</label>
@@ -140,6 +133,10 @@
                             <strong>Тип запроса:</strong>
                             <span id="detailRequestType"></span>
                         </div>
+                        <div class="network-row">
+                            <strong>Тело ответа:</strong>
+                            <pre id="detailResponseBody" class="response-body"></pre>
+                        </div>
                     </div>
                 </div>
 
@@ -150,17 +147,46 @@
                     <button id="copyDetails" class="action-button copy-button">
                         📄 Скопировать детали
                     </button>
+                    <button id="analyzeWithAI" class="action-button ai-button hidden">
+                        🤖 Анализ с AI
+                    </button>
+                    <button id="generatePlayback" class="action-button playback-button hidden">
+                        🎬 Сгенерировать шаги воспроизведения
+                    </button>
                 </div>
 
                 <div id="curlPreview" class="curl-preview hidden">
                     <label>cURL команда для воспроизведения</label>
                     <pre id="curlCommand"></pre>
                 </div>
+
+                <div id="aiAnalysisSection" class="detail-section hidden">
+                    <label>Анализ с AI (Pollinations.ai)</label>
+                    <div class="ai-analysis-content">
+                        <div id="aiLoading" class="ai-loading hidden">
+                            <div class="spinner"></div>
+                            <span>AI анализирует...</span>
+                        </div>
+                        <pre id="aiAnalysisResult" class="ai-result"></pre>
+                    </div>
+                </div>
+
+                <div id="playbackSection" class="detail-section hidden">
+                    <label>Шаги воспроизведения (AI)</label>
+                    <div class="playback-content">
+                        <div id="playbackLoading" class="ai-loading hidden">
+                            <div class="spinner"></div>
+                            <span>Генерация шагов...</span>
+                        </div>
+                        <div id="playbackSteps" class="playback-steps"></div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 </div>
 
+<script src="ai.js"></script>
 <script src="history.js"></script>
 </body>
 </html>

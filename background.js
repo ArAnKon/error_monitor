@@ -1,6 +1,6 @@
-chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
     if (request.type === "CAPTURE_SCREENSHOT") {
-        chrome.tabs.captureVisibleTab(null, {format: 'jpeg', quality: 80}, (dataUrl) => {
+        chrome.tabs.captureVisibleTab(null, {format: 'jpeg', quality: 80}, function(dataUrl) {
             sendResponse({screenshot: dataUrl});
         });
         return true;
@@ -26,40 +26,75 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         }
         return true;
     }
+
+    if (request.type === "POLLINATIONS_API_CALL") {
+        var controller = new AbortController();
+        var timeoutId = setTimeout(function() { controller.abort(); }, 30000);
+
+        fetch('https://text.pollinations.ai', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                messages: [{
+                    role: 'user',
+                    content: request.prompt
+                }],
+                model: 'openai',
+                seed: Date.now()
+            }),
+            signal: controller.signal
+        })
+        .then(function(response) {
+            clearTimeout(timeoutId);
+            if (!response.ok) {
+                throw new Error('API returned ' + response.status);
+            }
+            return response.text();
+        })
+        .then(function(text) {
+            sendResponse({success: true, text: text.trim()});
+        })
+        .catch(function(error) {
+            clearTimeout(timeoutId);
+            sendResponse({success: false, error: error.message});
+        });
+
+        return true;
+    }
 });
 
-
-chrome.tabs.onRemoved.addListener((tabId) => {
-    chrome.storage.local.get(['tabStates'], (result) => {
-        const tabStates = result.tabStates || {};
+chrome.tabs.onRemoved.addListener(function(tabId) {
+    chrome.storage.local.get(['tabStates'], function(result) {
+        var tabStates = result.tabStates || {};
         if (tabStates[tabId]) {
             delete tabStates[tabId];
-            chrome.storage.local.set({tabStates});
-            console.log(`[Error Monitor] Removed state for closed tab ${tabId}`);
+            chrome.storage.local.set({tabStates: tabStates});
+            console.log('[Error Monitor] Removed state for closed tab ' + tabId);
         }
     });
 });
 
+setInterval(function() {
+    chrome.tabs.query({}, function(tabs) {
+        var activeTabIds = new Set(tabs.map(function(tab) { return tab.id; }));
 
-setInterval(() => {
-    chrome.tabs.query({}, (tabs) => {
-        const activeTabIds = new Set(tabs.map(tab => tab.id));
+        chrome.storage.local.get(['tabStates'], function(result) {
+            var tabStates = result.tabStates || {};
+            var changed = false;
 
-        chrome.storage.local.get(['tabStates'], (result) => {
-            const tabStates = result.tabStates || {};
-            let changed = false;
-
-            Object.keys(tabStates).forEach(tabIdStr => {
-                const tabId = parseInt(tabIdStr);
+            Object.keys(tabStates).forEach(function(tabIdStr) {
+                var tabId = parseInt(tabIdStr);
                 if (!activeTabIds.has(tabId)) {
                     delete tabStates[tabIdStr];
                     changed = true;
-                    console.log(`[Error Monitor] Cleaned up stale state for tab ${tabId}`);
+                    console.log('[Error Monitor] Cleaned up stale state for tab ' + tabId);
                 }
             });
 
             if (changed) {
-                chrome.storage.local.set({tabStates});
+                chrome.storage.local.set({tabStates: tabStates});
             }
         });
     });
@@ -67,44 +102,42 @@ setInterval(() => {
 
 
 chrome.webRequest.onCompleted.addListener(
-    (details) => {
+    function(details) {
         if (details.statusCode >= 400) {
             chrome.tabs.sendMessage(details.tabId, {
                 type: "NETWORK_ERROR",
                 error: details
-            }).catch(() => {
-            });
+            }).catch(function() {});
         }
     },
     {urls: ["<all_urls>"]},
     ["responseHeaders"]
 );
 
+
 chrome.webRequest.onErrorOccurred.addListener(
-    (details) => {
+    function(details) {
         chrome.tabs.sendMessage(details.tabId, {
             type: "NETWORK_ERROR",
             error: details
-        }).catch(() => {
-        });
+        }).catch(function() {});
     },
     {urls: ["<all_urls>"]}
 );
 
 
-chrome.storage.onChanged.addListener((changes, namespace) => {
+chrome.storage.onChanged.addListener(function(changes, namespace) {
     if (namespace === 'local') {
         if (changes.notificationTimer || changes.notificationPosition) {
 
-            chrome.tabs.query({}, (tabs) => {
-                tabs.forEach(tab => {
+            chrome.tabs.query({}, function(tabs) {
+                tabs.forEach(function(tab) {
                     if (tab.id) {
                         chrome.tabs.sendMessage(tab.id, {
                             type: "NOTIFICATION_SETTINGS_UPDATE",
-                            position: changes.notificationPosition?.newValue || "bottom-right",
-                            timer: changes.notificationTimer?.newValue || 10000
-                        }).catch(() => {
-                        });
+                            position: changes.notificationPosition ? changes.notificationPosition.newValue : "bottom-right",
+                            timer: changes.notificationTimer ? changes.notificationTimer.newValue : 10000
+                        }).catch(function() {});
                     }
                 });
             });

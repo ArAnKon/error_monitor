@@ -25,6 +25,8 @@ chrome.runtime.sendMessage({type: "GET_TAB_ID"}, (response) => {
 
         loadSettings();
     }
+
+    initUserActionTracking();
 });
 
 
@@ -1242,13 +1244,25 @@ function initUserActionTracking() {
 
             this.addEventListener('load', function () {
                 if (this._errorMonitorRequestInfo) {
+                    let responseBody = null;
+                    try {
+                        if (this.responseType === '' || this.responseType === 'text') {
+                            responseBody = this.responseText ? this.responseText.substring(0, 2000) : null;
+                        } else if (this.responseType === 'json') {
+                            responseBody = this.response ? JSON.stringify(this.response).substring(0, 2000) : null;
+                        }
+                    } catch (e) {
+                        responseBody = '[Unable to read response body]';
+                    }
+
                     trackUserAction({
                         type: 'XHR_RESPONSE',
                         details: {
                             ...this._errorMonitorRequestInfo,
                             status: this.status,
                             statusText: this.statusText,
-                            responseType: this.responseType
+                            responseType: this.responseType,
+                            responseBody: responseBody
                         }
                     });
                 }
@@ -1266,7 +1280,7 @@ function initUserActionTracking() {
         let body = null;
 
         if (typeof url === 'string') {
-            url = url;
+            // url is already a string
         } else if (url && url.url) {
             url = url.url;
             method = url.method || 'GET';
@@ -1294,7 +1308,21 @@ function initUserActionTracking() {
         const fetchPromise = originalFetch.apply(this, args);
 
 
-        fetchPromise.then(response => {
+        fetchPromise.then(async response => {
+            let responseBody = null;
+            try {
+                const clonedResponse = response.clone();
+                const contentType = response.headers.get('content-type') || '';
+                if (contentType.includes('application/json')) {
+                    const json = await clonedResponse.json();
+                    responseBody = JSON.stringify(json).substring(0, 2000);
+                } else if (contentType.includes('text/')) {
+                    responseBody = (await clonedResponse.text()).substring(0, 2000);
+                }
+            } catch (e) {
+                responseBody = '[Unable to read response body]';
+            }
+
             trackUserAction({
                 type: 'FETCH_RESPONSE',
                 details: {
@@ -1302,7 +1330,8 @@ function initUserActionTracking() {
                     status: response.status,
                     statusText: response.statusText,
                     ok: response.ok,
-                    redirected: response.redirected
+                    redirected: response.redirected,
+                    responseBody: responseBody
                 }
             });
             return response;
@@ -1402,121 +1431,81 @@ function getElementContext(element) {
 function groupInputActions(actions) {
     const grouped = [];
     let currentInputGroup = null;
-    let currentCheckboxGroup = null;
+    const processedIndices = new Set();
 
-    for (const action of actions) {
+    for (let i = 0; i < actions.length; i++) {
+        if (processedIndices.has(i)) continue;
 
+        const action = actions[i];
+
+        // Группировка INPUT действий
         if (action.type === 'INPUT') {
             const selector = action.details.element?.selector || '';
+            const fieldName = action.details.element?.name ||
+                action.details.element?.placeholder ||
+                action.details.element?.label ||
+                action.details.element?.id ||
+                'поле';
 
-            if (currentInputGroup &&
-                currentInputGroup.selector === selector &&
-                action.timestamp - currentInputGroup.lastTimestamp < 1000) {
+            // Собираем все последовательные INPUT действия для этого поля
+            const inputGroup = {
+                selector: selector,
+                fieldName: fieldName,
+                actions: [action],
+                values: [action.details.element?.value || ''],
+                startTimestamp: action.timestamp,
+                lastTimestamp: action.timestamp
+            };
 
+            processedIndices.add(i);
 
-                currentInputGroup.actions.push(action);
-                currentInputGroup.lastTimestamp = action.timestamp;
-                currentInputGroup.lastValue = action.details.element?.value;
+            // Смотрим следующие действия
+            for (let j = i + 1; j < actions.length; j++) {
+                const nextAction = actions[j];
+                if (nextAction.type !== 'INPUT') break;
 
-            } else {
+                const nextSelector = nextAction.details.element?.selector || '';
+                if (nextSelector !== selector) break;
 
-                if (currentInputGroup) {
-                    grouped.push({
-                        type: 'INPUT_GROUP',
-                        timestamp: currentInputGroup.startTimestamp,
-                        details: currentInputGroup,
-                        originalActions: currentInputGroup.actions
-                    });
-                }
+                // Если прошло больше 2 секунд - новая группа
+                if (nextAction.timestamp - inputGroup.lastTimestamp > 2000) break;
 
-
-                currentInputGroup = {
-                    selector: selector,
-                    element: action.details.element,
-                    actions: [action],
-                    startTimestamp: action.timestamp,
-                    lastTimestamp: action.timestamp,
-                    lastValue: action.details.element?.value,
-                    fieldName: action.details.element?.name ||
-                        action.details.element?.placeholder ||
-                        action.details.element?.label ||
-                        'поле'
-                };
+                inputGroup.actions.push(nextAction);
+                inputGroup.values.push(nextAction.details.element?.value || '');
+                inputGroup.lastTimestamp = nextAction.timestamp;
+                processedIndices.add(j);
             }
+
+            // Создаем сгруппированное действие
+            const lastValue = inputGroup.values[inputGroup.values.length - 1];
+            grouped.push({
+                type: 'INPUT_GROUP',
+                timestamp: inputGroup.startTimestamp,
+                details: {
+                    ...inputGroup,
+                    lastValue: lastValue
+                },
+                originalActions: inputGroup.actions
+            });
             continue;
         }
 
-
-        if (action.type === 'CLICK' ||
-            action.type === 'CHECKBOX_CLICK' ||
-            action.type === 'CHECKBOX_TOGGLE' ||
-            action.type === 'FOCUS') {
-
-            const selector = action.details.element?.selector || '';
-            const isCheckboxAction = action.type === 'CHECKBOX_CLICK' ||
-                action.type === 'CHECKBOX_TOGGLE' ||
-                (action.details.element &&
-                    action.details.element.type === 'checkbox');
-
-
-            if (isCheckboxAction) {
-
-                if (currentInputGroup) {
-                    grouped.push({
-                        type: 'INPUT_GROUP',
-                        timestamp: currentInputGroup.startTimestamp,
-                        details: currentInputGroup,
-                        originalActions: currentInputGroup.actions
-                    });
-                    currentInputGroup = null;
-                }
-
-
-                if (action.type === 'FOCUS' ||
-                    (action.type === 'CLICK' && action.details.element?.type === 'checkbox')) {
-
-                    continue;
-                }
-            }
-        }
-
-
-        if (currentInputGroup) {
-            grouped.push({
-                type: 'INPUT_GROUP',
-                timestamp: currentInputGroup.startTimestamp,
-                details: currentInputGroup,
-                originalActions: currentInputGroup.actions
-            });
-            currentInputGroup = null;
-        }
-
-
+        // Пропускаем вспомогательные действия
         if (action.type === 'FOCUS' ||
-            action.type === 'CHECKBOX_CLICK' ||
-            action.type === 'RADIO_CLICK' ||
-            action.type === 'INPUT' ||
             action.type === 'CONSOLE_ERROR_LOG' ||
             action.type === 'WINDOW_ERROR' ||
             action.type === 'FETCH_RESPONSE' ||
             action.type === 'XHR_RESPONSE' ||
             action.type === 'FETCH_ERROR') {
-
+            processedIndices.add(i);
             continue;
         }
 
-
-        grouped.push(action);
-    }
-
-
-    if (currentInputGroup) {
-        grouped.push({
-            type: 'INPUT_GROUP',
-            timestamp: currentInputGroup.startTimestamp,
-            details: currentInputGroup,
-            originalActions: currentInputGroup.actions
-        });
+        // Добавляем другие действия
+        if (!processedIndices.has(i)) {
+            grouped.push(action);
+            processedIndices.add(i);
+        }
     }
 
     return grouped;
@@ -1524,176 +1513,99 @@ function groupInputActions(actions) {
 
 
 function generateReproductionSteps(errorData) {
-
     const relevantActions = userActions.filter(action =>
         errorData.timestamp - action.timestamp <= ACTION_TIMEOUT
-    ).slice(-20);
+    ).slice(-30); // Увеличил до 30 действий для лучшего контекста
 
     if (relevantActions.length === 0) {
         return 'Не удалось автоматически определить шаги воспроизведения.';
     }
 
-
     const groupedActions = groupInputActions(relevantActions);
 
-    const steps = [];
+    // Используем Map для дедупликации шагов
+    const stepsMap = new Map();
     let stepNumber = 1;
 
-
-    groupedActions.forEach((action, index) => {
-        let step = `${stepNumber}. `;
+    for (const action of groupedActions) {
+        let step = '';
 
         switch (action.type) {
             case 'INPUT_GROUP':
                 const inputGroup = action.details;
-                const input = inputGroup.element;
+                const input = inputGroup.fieldName;
 
-                if (!input) {
-                    step += 'Ввести текст';
-                    break;
+                let inputDescription = `Ввести текст в поле "${input}"`;
+
+                if (inputGroup.lastValue && inputGroup.lastValue.trim() !== '' &&
+                    !inputGroup.lastValue.includes('***')) {
+                    const value = inputGroup.lastValue.replace(/\s+/g, ' ').substring(0, 100);
+                    inputDescription += `: "${value}"`;
                 }
 
-                let inputDescription = 'Ввести текст';
-
-
-                if (input.name && input.name !== '') {
-                    inputDescription += ` в поле "${input.name}"`;
-                } else if (input.placeholder && input.placeholder !== '') {
-                    inputDescription += ` в поле "${input.placeholder}"`;
-                } else if (input.label && input.label !== '') {
-                    inputDescription += ` в поле "${input.label}"`;
-                } else if (input.fieldName && input.fieldName !== '') {
-                    inputDescription += ` в ${input.fieldName}`;
-                }
-
-
-                if (input.lastValue && input.lastValue.trim() !== '' &&
-                    !input.lastValue.includes('***')) {
-                    const value = input.lastValue.replace(/\s+/g, ' ');
-                    inputDescription += `: "${value.substring(0, 50)}${value.length > 50 ? '...' : ''}"`;
-                }
-
-                step += inputDescription;
+                step = inputDescription;
                 break;
 
             case 'CHECKBOX_TOGGLE':
-            case 'RADIO_SELECT':
                 const toggleEl = action.details.element;
-                let toggleDescription = '';
-
-                if (action.type === 'CHECKBOX_TOGGLE') {
-                    const state = action.details.checked ? 'включить' : 'выключить';
-                    if (toggleEl && toggleEl.label && toggleEl.label.trim()) {
-                        toggleDescription = `${state} чекбокс "${toggleEl.label.trim()}"`;
-                    } else if (toggleEl && toggleEl.name && toggleEl.name.trim()) {
-                        toggleDescription = `${state} чекбокс "${toggleEl.name.trim()}"`;
-                    } else {
-                        toggleDescription = `${state} чекбокс`;
-                    }
-                } else if (action.type === 'RADIO_SELECT') {
-                    if (toggleEl && toggleEl.label && toggleEl.label.trim()) {
-                        toggleDescription = `Выбрать радио-кнопку "${toggleEl.label.trim()}"`;
-                    } else if (toggleEl && toggleEl.name && toggleEl.name.trim()) {
-                        toggleDescription = `Выбрать радио-кнопку "${toggleEl.name.trim()}"`;
-                    } else if (toggleEl && toggleEl.value && toggleEl.value.trim()) {
-                        toggleDescription = `Выбрать опцию "${toggleEl.value.trim()}"`;
-                    } else {
-                        toggleDescription = `Выбрать радио-кнопку`;
-                    }
+                const state = action.details.checked ? 'Отметить' : 'Снять отметку';
+                if (toggleEl && (toggleEl.label || toggleEl.name)) {
+                    step = `${state} чекбокс "${(toggleEl.label || toggleEl.name).trim()}"`;
+                } else {
+                    step = `${state} чекбокс`;
                 }
-                step += toggleDescription;
                 break;
 
-            case 'SELECT_CHANGE':
-                const selectEl = action.details.element;
-                let selectDescription = 'Выбрать из списка';
-
-                if (selectEl && selectEl.label && selectEl.label.trim()) {
-                    selectDescription += ` "${selectEl.label.trim()}"`;
-                } else if (selectEl && selectEl.name && selectEl.name.trim()) {
-                    selectDescription += ` "${selectEl.name.trim()}"`;
+            case 'RADIO_SELECT':
+                const radioEl = action.details.element;
+                if (radioEl && (radioEl.label || radioEl.name)) {
+                    step = `Выбрать "${(radioEl.label || radioEl.name).trim()}"`;
+                } else {
+                    step = `Выбрать радио-кнопку`;
                 }
-
-                if (action.details.selectedText && action.details.selectedText.trim()) {
-                    selectDescription += ` значение "${action.details.selectedText.trim()}"`;
-                }
-                step += selectDescription;
                 break;
 
             case 'CLICK':
                 const clickEl = action.details.element;
-                let clickDescription = '';
-
-
                 if (clickEl && clickEl.text && clickEl.text.trim() !== '') {
                     const cleanText = clickEl.text.trim().replace(/\s+/g, ' ');
-                    clickDescription = `Кликнуть на "${cleanText.substring(0, 60)}${cleanText.length > 60 ? '...' : ''}"`;
-                } else if (clickEl && clickEl.label && clickEl.label.trim()) {
-                    clickDescription = `Кликнуть на "${clickEl.label.trim()}"`;
+                    step = `Нажать "${cleanText.substring(0, 60)}"`;
+                } else if (clickEl && clickEl.label) {
+                    step = `Нажать "${clickEl.label.trim()}"`;
+                } else if (clickEl && clickEl.placeholder) {
+                    step = `Кликнуть на поле "${clickEl.placeholder}"`;
                 } else {
-                    const context = getElementContext(clickEl);
-                    if (context) {
-                        clickDescription = `Кликнуть на ${context}`;
-                    } else if (clickEl && clickEl.selector) {
-                        const lastPart = clickEl.selector.split(' > ').pop();
-                        clickDescription = `Кликнуть на элемент ${lastPart}`;
-                    } else {
-                        clickDescription = `Кликнуть в координаты (${action.details.x}, ${action.details.y})`;
-                    }
-                }
-                step += clickDescription;
-                break;
-
-            case 'FORM_SUBMIT':
-                const form = action.details.form;
-                step += `Отправить форму`;
-                if (form.id) {
-                    step += ` #${form.id}`;
-                } else if (form.action) {
-                    try {
-                        const actionUrl = new URL(form.action, window.location.origin);
-                        step += ` на ${actionUrl.pathname}`;
-                    } catch (e) {
-                        step += ` (${form.action})`;
-                    }
-                }
-                break;
-
-            case 'NAVIGATION':
-                const url = action.details.url;
-                try {
-                    const urlObj = new URL(url, window.location.origin);
-                    step += `Перейти на ${urlObj.pathname || urlObj.href}`;
-                } catch (e) {
-                    step += `Перейти на ${url}`;
-                }
-                break;
-
-            case 'XHR_REQUEST':
-            case 'FETCH_REQUEST':
-                const reqUrl = action.details.url;
-                try {
-                    const urlObj = new URL(reqUrl, window.location.origin);
-                    step += `Выполнить ${action.details.method} запрос на ${urlObj.pathname}`;
-                } catch (e) {
-                    step += `Выполнить ${action.details.method} запрос на ${reqUrl}`;
+                    step = `Кликнуть на элемент`;
                 }
                 break;
 
             default:
-
-                return;
+                continue;
         }
 
+        if (step) {
+            // Создаем ключ для дедупликации (нормализуем шаг)
+            const normalizedStep = step.toLowerCase().replace(/[^а-яёa-z0-9]/g, '');
 
-        steps.push(step);
-        stepNumber++;
-    });
+            // Пропускаем если такой шаг уже был
+            if (!stepsMap.has(normalizedStep)) {
+                stepsMap.set(normalizedStep, `${stepNumber}. ${step}`);
+                stepNumber++;
+            }
+        }
+    }
 
+    // Ограничиваем количество шагов до 15
+    const steps = Array.from(stepsMap.values()).slice(0, 15);
 
     const errorMessage = errorData.message.length > 80
         ? errorData.message.substring(0, 80) + '...'
         : errorData.message;
+
+    if (steps.length === 0) {
+        return 'Не удалось автоматически определить шаги воспроизведения.';
+    }
+
     steps.push(`${stepNumber}. Ошибка: ${errorMessage}`);
 
     return steps.join('\n');
