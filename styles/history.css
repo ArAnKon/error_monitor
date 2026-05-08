@@ -1121,3 +1121,173 @@ body.dark-theme .screenshot-button:hover {
     white-space: pre-wrap;
     word-break: break-word;
 }
+
+/* Jira Modal Styles */
+.jira-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.jira-modal.hidden {
+    display: none;
+}
+
+.jira-modal-content {
+    background: white;
+    border-radius: 8px;
+    width: 90%;
+    max-width: 450px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+}
+
+.dark-theme .jira-modal-content {
+    background: #1e1e1e;
+    color: #e0e0e0;
+}
+
+.jira-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 20px;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.dark-theme .jira-modal-header {
+    border-bottom-color: #333;
+}
+
+.jira-modal-header h4 {
+    margin: 0;
+    color: #0052cc;
+}
+
+.close-modal {
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: #6b778c;
+}
+
+.jira-modal-body {
+    padding: 20px;
+}
+
+.jira-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    padding: 30px;
+}
+
+.spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid #e0e0e0;
+    border-top-color: #0052cc;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+.jira-result {
+    padding: 20px;
+}
+
+.jira-success, .jira-error {
+    text-align: center;
+}
+
+.success-icon, .error-icon {
+    font-size: 48px;
+    display: block;
+    margin-bottom: 15px;
+}
+
+.jira-link {
+    display: inline-block;
+    margin-top: 15px;
+    padding: 8px 16px;
+    background: #0052cc;
+    color: white;
+    text-decoration: none;
+    border-radius: 3px;
+}
+
+.jira-link:hover {
+    background: #0747a6;
+}
+
+.jira-settings-info {
+    text-align: center;
+    padding: 20px;
+}
+
+.jira-button {
+    background: #0052cc !important;
+    color: white !important;
+}
+
+.jira-button:hover {
+    background: #0747a6 !important;
+}
+
+/* Обновите стили для темной темы */
+.dark-theme .jira-modal-content {
+    background: #1e1e1e;
+    border: 1px solid #333;
+}
+
+.dark-theme .close-modal {
+    color: #e0e0e0;
+}
+
+.dark-theme .jira-link {
+    background: #0052cc;
+}
+
+.dark-theme .jira-link:hover {
+    background: #0747a6;
+}
+
+/* Стили для модального окна выбора метода */
+.creation-methods {
+    padding: 20px;
+}
+
+.creation-methods .action-button {
+    width: 100%;
+    padding: 12px;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.creation-methods .action-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.creation-methods .action-button:active {
+    transform: translateY(0);
+}
+
+.dark-theme .creation-methods .action-button {
+    border: 1px solid #333;
+}

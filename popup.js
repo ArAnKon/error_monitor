@@ -13,6 +13,57 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 
+document.getElementById("jiraSettings").addEventListener("click", openJiraSettings);
+document.getElementById("jiraSessionSend").addEventListener("click", sendCurrentErrorViaSession);
+
+async function sendCurrentErrorViaSession() {
+    const [tab] = await chrome.tabs.query({active: true, currentWindow: true});
+
+    chrome.scripting.executeScript({
+        target: {tabId: tab.id},
+        func: () => {
+            return window.errorMonitor ? window.errorMonitor.getCurrentErrors() : [];
+        }
+    }, async (results) => {
+        const errors = results && results[0] && results[0].result ? results[0].result : [];
+
+        if (errors.length === 0) {
+            showSuccessMessage('Нет активных ошибок на этой странице');
+            return;
+        }
+
+        const settings = await loadJiraSettings();
+        if (!settings || !settings.jiraUrl || !settings.projectKey || !settings.issueType) {
+            showSuccessMessage('Сначала настройте Jira в расширении');
+            return;
+        }
+
+        const lastError = errors[errors.length - 1];
+        await sendToJiraViaSession(lastError, settings);
+    });
+}
+
+
+function openJiraSettings() {
+    chrome.windows.getCurrent({}, (currentWindow) => {
+        const width = 600;
+        const height = 700;
+
+        const left = currentWindow.left + Math.floor((currentWindow.width - width) / 2);
+        const top = currentWindow.top + Math.floor((currentWindow.height - height) / 2);
+
+        chrome.windows.create({
+            url: chrome.runtime.getURL("jira-settings.html"),
+            type: "popup",
+            width: width,
+            height: height,
+            left: Math.max(0, left),
+            top: Math.max(0, top),
+            focused: true
+        });
+    });
+}
+
 function setupEventListeners() {
     document.getElementById("toggleExtension").addEventListener("change", toggleExtension);
     document.getElementById("clearAll").addEventListener("click", clearCurrentErrors);

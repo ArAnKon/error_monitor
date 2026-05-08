@@ -1,6 +1,5 @@
 /**
  * AI Integration - Pollinations.ai
- * Все API вызовы идут через background script
  */
 class ErrorMonitorAI {
     constructor() {
@@ -52,7 +51,6 @@ class ErrorMonitorAI {
             const prompt = this.buildPlaybackPrompt(error);
             const text = await this.callAPI(prompt);
 
-            // Пытаемся извлечь JSON из ответа
             const steps = this.extractStepsFromResponse(text);
 
             if (steps && steps.length > 0) {
@@ -60,7 +58,6 @@ class ErrorMonitorAI {
                 return { success: true, playbackSteps: cleanedSteps };
             }
 
-            // Если не удалось извлечь шаги, возвращаем пустой массив
             return { success: false, message: 'No valid steps extracted', playbackSteps: [] };
 
         } catch (err) {
@@ -104,10 +101,8 @@ class ErrorMonitorAI {
     extractStepsFromResponse(text) {
         if (!text) return null;
 
-        // Пытаемся найти JSON в ответе
         let jsonMatch = text.match(/\[[\s\S]*\]/);
         if (!jsonMatch) {
-            // Пробуем другой паттерн
             jsonMatch = text.match(/\{[\s\S]*\}/);
         }
 
@@ -137,7 +132,6 @@ class ErrorMonitorAI {
             const step = steps[i];
             if (!step || !step.description) continue;
 
-            // Нормализуем описание для дедупликации
             const description = this.cleanDescription(step.description);
             if (!description || description.length < 3) continue;
 
@@ -174,23 +168,17 @@ class ErrorMonitorAI {
 
         let cleaned = String(description);
 
-        // Удаляем префиксы действий
         cleaned = cleaned.replace(/^(click|input|navigate|toggle|check|select|нажать|ввести|открыть|выбрать)\s+/i, '');
         cleaned = cleaned.replace(/^click\s+/i, '');
         cleaned = cleaned.replace(/^input\s+/i, '');
-
-        // Заменяем Toggle на Check
         cleaned = cleaned.replace(/Toggle\s+/i, 'Check ');
 
-        // Обрезаем длинные описания
         if (cleaned.length > 80) {
             cleaned = cleaned.substring(0, 77) + '...';
         }
 
-        // Очищаем пробелы
         cleaned = cleaned.replace(/\s+/g, ' ').trim();
 
-        // Делаем первую букву заглавной
         if (cleaned.length > 0) {
             cleaned = cleaned.charAt(0).toUpperCase() + cleaned.slice(1);
         }
@@ -234,11 +222,20 @@ class ErrorMonitorAI {
         const timeoutId = setTimeout(() => controller.abort(), 30000);
 
         try {
+            // Исправленный формат запроса для Pollinations.ai
             const response = await fetch(this.apiBase, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'text/plain'
+                },
                 body: JSON.stringify({
-                    messages: [{ role: 'user', content: prompt }],
+                    messages: [
+                        {
+                            role: 'user',
+                            content: prompt
+                        }
+                    ],
                     model: 'openai',
                     seed: Date.now()
                 }),
@@ -276,6 +273,5 @@ class ErrorMonitorAI {
     }
 }
 
-// Создаем глобальный экземпляр
 window.errorMonitorAI = new ErrorMonitorAI();
 console.log('[AI] ErrorMonitorAI initialized successfully');

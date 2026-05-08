@@ -1280,7 +1280,6 @@ function initUserActionTracking() {
         let body = null;
 
         if (typeof url === 'string') {
-            // url is already a string
         } else if (url && url.url) {
             url = url.url;
             method = url.method || 'GET';
@@ -1438,7 +1437,6 @@ function groupInputActions(actions) {
 
         const action = actions[i];
 
-        // Группировка INPUT действий
         if (action.type === 'INPUT') {
             const selector = action.details.element?.selector || '';
             const fieldName = action.details.element?.name ||
@@ -1447,7 +1445,6 @@ function groupInputActions(actions) {
                 action.details.element?.id ||
                 'поле';
 
-            // Собираем все последовательные INPUT действия для этого поля
             const inputGroup = {
                 selector: selector,
                 fieldName: fieldName,
@@ -1459,7 +1456,6 @@ function groupInputActions(actions) {
 
             processedIndices.add(i);
 
-            // Смотрим следующие действия
             for (let j = i + 1; j < actions.length; j++) {
                 const nextAction = actions[j];
                 if (nextAction.type !== 'INPUT') break;
@@ -1467,7 +1463,6 @@ function groupInputActions(actions) {
                 const nextSelector = nextAction.details.element?.selector || '';
                 if (nextSelector !== selector) break;
 
-                // Если прошло больше 2 секунд - новая группа
                 if (nextAction.timestamp - inputGroup.lastTimestamp > 2000) break;
 
                 inputGroup.actions.push(nextAction);
@@ -1476,7 +1471,6 @@ function groupInputActions(actions) {
                 processedIndices.add(j);
             }
 
-            // Создаем сгруппированное действие
             const lastValue = inputGroup.values[inputGroup.values.length - 1];
             grouped.push({
                 type: 'INPUT_GROUP',
@@ -1490,7 +1484,6 @@ function groupInputActions(actions) {
             continue;
         }
 
-        // Пропускаем вспомогательные действия
         if (action.type === 'FOCUS' ||
             action.type === 'CONSOLE_ERROR_LOG' ||
             action.type === 'WINDOW_ERROR' ||
@@ -1501,7 +1494,6 @@ function groupInputActions(actions) {
             continue;
         }
 
-        // Добавляем другие действия
         if (!processedIndices.has(i)) {
             grouped.push(action);
             processedIndices.add(i);
@@ -1515,15 +1507,13 @@ function groupInputActions(actions) {
 function generateReproductionSteps(errorData) {
     const relevantActions = userActions.filter(action =>
         errorData.timestamp - action.timestamp <= ACTION_TIMEOUT
-    ).slice(-30); // Увеличил до 30 действий для лучшего контекста
+    ).slice(-30);
 
     if (relevantActions.length === 0) {
         return 'Не удалось автоматически определить шаги воспроизведения.';
     }
 
     const groupedActions = groupInputActions(relevantActions);
-
-    // Используем Map для дедупликации шагов
     const stepsMap = new Map();
     let stepNumber = 1;
 
@@ -1584,10 +1574,8 @@ function generateReproductionSteps(errorData) {
         }
 
         if (step) {
-            // Создаем ключ для дедупликации (нормализуем шаг)
             const normalizedStep = step.toLowerCase().replace(/[^а-яёa-z0-9]/g, '');
 
-            // Пропускаем если такой шаг уже был
             if (!stepsMap.has(normalizedStep)) {
                 stepsMap.set(normalizedStep, `${stepNumber}. ${step}`);
                 stepNumber++;
@@ -1595,7 +1583,6 @@ function generateReproductionSteps(errorData) {
         }
     }
 
-    // Ограничиваем количество шагов до 15
     const steps = Array.from(stepsMap.values()).slice(0, 15);
 
     const errorMessage = errorData.message.length > 80

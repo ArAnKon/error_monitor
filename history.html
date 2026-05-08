@@ -153,6 +153,53 @@
                     <button id="generatePlayback" class="action-button playback-button hidden">
                         🎬 Сгенерировать шаги воспроизведения
                     </button>
+                    <button id="sendToJira" class="action-button jira-button hidden">
+                        🔷 Отправить в Jira
+                    </button>
+                    <div id="issueTitleModal" class="jira-modal hidden">
+                        <div class="jira-modal-content" style="max-width: 500px;">
+                            <div class="jira-modal-header">
+                                <h4>📝 Создание задачи в Jira</h4>
+                                <button id="closeTitleModal" class="close-modal">&times;</button>
+                            </div>
+                            <div class="jira-modal-body">
+                                <div class="form-group">
+                                    <label>🏷️ Название задачи *</label>
+                                    <input type="text" id="issueTitle" class="issue-title-input"
+                                           placeholder="Введите краткое описание ошибки..."
+                                           style="width: 100%; padding: 10px; font-size: 14px;" />
+                                    <div class="help-text">Краткое описание проблемы (обязательно)</div>
+                                </div>
+                                <div class="form-group">
+                                    <label>📝 Предпросмотр названия:</label>
+                                    <div id="titlePreview" class="title-preview" style="padding: 8px; background: #f4f5f7; border-radius: 3px; font-size: 13px;"></div>
+                                </div>
+                                <div class="buttons" style="margin-top: 20px; padding-top: 0; border-top: none;">
+                                    <button id="cancelTitleModal" class="btn-secondary">Отмена</button>
+                                    <button id="confirmSendToJira" class="btn-primary">Отправить в Jira</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="jiraModal" class="jira-modal hidden">
+                        <div class="jira-modal-content">
+                            <div class="jira-modal-header">
+                                <h4>Отправка в Jira</h4>
+                                <button id="closeJiraModal" class="close-modal">&times;</button>
+                            </div>
+                            <div class="jira-modal-body">
+                                <div id="jiraLoading" class="jira-loading hidden">
+                                    <div class="spinner"></div>
+                                    <span>Отправка в Jira...</span>
+                                </div>
+                                <div id="jiraResult" class="jira-result hidden"></div>
+                                <div id="jiraSettingsInfo" class="jira-settings-info">
+                                    <p>⚠️ Настройки Jira не заполнены</p>
+                                    <button id="openJiraSettings" class="action-button">⚙️ Настроить Jira</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <div id="curlPreview" class="curl-preview hidden">
