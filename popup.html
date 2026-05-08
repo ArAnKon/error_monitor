@@ -13,12 +13,10 @@
                 <input type="checkbox" id="toggleExtension" checked>
                 <span class="slider round"></span>
             </label>
-            <span id="totalCount">0</span>
         </div>
     </div>
 
     <div class="content-section">
-        <!-- СТАТИСТИКА -->
         <div class="stats-grid">
             <div class="stat-card total">
                 <div class="stat-number" id="totalCount">0</div>
@@ -34,9 +32,7 @@
             </div>
         </div>
 
-        <!-- НАСТРОЙКИ -->
         <div class="settings-section">
-            <!-- ПЕРЕКЛЮЧАТЕЛЬ ТЕМЫ -->
             <div class="setting-item">
                 <label class="checkbox-label">
                     <input type="checkbox" id="toggleTheme">
@@ -54,7 +50,6 @@
             </div>
 
 
-            <!-- НАСТРОЙКИ ТАЙМЕРА -->
             <div class="setting-item">
                 <label for="notificationTimer">Время показа уведомлений:</label>
                 <select id="notificationTimer">
@@ -68,7 +63,6 @@
                 </select>
             </div>
 
-            <!-- ОСНОВНОЙ ЧЕКБОКС ФИЛЬТРА -->
             <div class="setting-item">
                 <label class="checkbox-label">
                     <input type="checkbox" id="filterByStatusCode">
@@ -77,7 +71,6 @@
                 </label>
             </div>
 
-            <!-- СЕКЦИЯ СТАТУС-КОДОВ (появляется при включении фильтра) -->
             <div class="status-codes-section" id="statusCodesSection">
                 <div class="status-codes-grid">
                     <label class="checkbox-label small">
@@ -123,14 +116,14 @@
                 </div>
             </div>
         </div>
-
-        <!-- КНОПКИ ДЕЙСТВИЙ -->
         <div class="buttons-grid">
             <button id="clearAll" class="full-width">🗑️ Очистить текущие</button>
             <button id="captureScreenshot" class="full-width">📸 Сделать скриншот</button>
             <button id="showHistory">📊 История</button>
             <button id="exportHistory">📤 Экспорт</button>
             <button id="clearHistory" class="danger full-width">⚠️ Очистить историю</button>
+            <button id="jiraSettings" class="full-width">⚙️ Настройки Jira</button>
+            <button id="jiraSessionSend" class="full-width">🍪 Отправить в Jira (через сессию)</button>
             <button id="testError">🛠️ Тест ошибки</button>
             <button id="testNetwork">🌐 Тест сети</button>
         </div>

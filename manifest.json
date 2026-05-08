@@ -1,28 +1,26 @@
 {
   "manifest_version": 3,
   "name": "Error Monitor",
-  "version": "1.5",
-  "description": "Показывает ошибки текущей вкладки в виде popup с скриншотами",
+  "version": "2.1",
+  "description": "Перехват ошибок в браузере и автоматическое создание задач в Jira",
   "permissions": [
     "activeTab",
     "scripting",
     "tabs",
     "webRequest",
     "storage",
-    "unlimitedStorage"
+    "unlimitedStorage",
+    "cookies"
+  ],
+  "host_permissions": [
+    "<all_urls>",
+    "https://*.atlassian.net/*"
   ],
   "content_scripts": [
     {
-      "matches": [
-        "<all_urls>"
-      ],
-      "js": [
-        "content.js",
-        "screenshot.js"
-      ],
-      "css": [
-        "styles/notification.css"
-      ],
+      "matches": ["<all_urls>"],
+      "js": ["content.js", "screenshot.js"],
+      "css": ["styles/notification.css"],
       "run_at": "document_end",
       "all_frames": true
     }
@@ -37,24 +35,13 @@
       "128": "icons/icon.png"
     }
   },
-  "host_permissions": [
-    "<all_urls>"
-  ],
   "background": {
     "service_worker": "background.js"
   },
   "web_accessible_resources": [
     {
-      "resources": [
-        "styles/*",
-        "history.html",
-        "history.js",
-        "history.css",
-        "screenshot.js"
-      ],
-      "matches": [
-        "<all_urls>"
-      ]
+      "resources": ["styles/*", "history.html", "history.js", "history.css", "screenshot.js"],
+      "matches": ["<all_urls>"]
     }
   ],
   "icons": {
