@@ -75,6 +75,19 @@
 #### Копирование cURL
 <img src="https://github.com/ArAnKon/error_monitor/blob/d87de364be684f426df816d8e4b657f390da9dec/demonstration/copy_curl.png" width="400" alt="Копирование cURL"/>
 
+#### Шаги воспроизведения
+<img src="https://github.com/ArAnKon/error_monitor/blob/main/demonstration/steps.png" width="400"/>
+
+#### AI-анализ
+<img src="https://github.com/ArAnKon/error_monitor/blob/main/demonstration/ai-analitycs.png" width="400"/>
+
+#### AI-Шаги
+<img src="https://github.com/ArAnKon/error_monitor/blob/main/demonstration/ai-steps.png" width="400"/>
+
+#### Jira-интеграция
+<img src="https://github.com/ArAnKon/error_monitor/blob/main/demonstration/jira-settings.png" width="400"/>
+<img src="https://github.com/ArAnKon/error_monitor/blob/main/demonstration/send-to-jira.png" width="400"/>
+
 </div>
 
 ## 📦 Установка
